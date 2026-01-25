@@ -6,7 +6,7 @@ services:
     dockerContext: .
     buildArgs:
       - key: VITE_API_URL
-        value: https://mat-backend.onrender.com
+        value: https://mat-backend-r9iw.onrender.com
     envVars:
       - key: VITE_API_URL
-        value: https://mat-backend.onrender.com
+        value: https://mat-backend-r9iw.onrender.com
