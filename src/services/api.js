@@ -70,7 +70,7 @@ export const productsApi = {
   archive: (id) => api.post(`/products/${id}/archive`),
   unarchive: (id) => api.post(`/products/${id}/unarchive`),
   getCategories: () => api.get('/products/categories'),
-  recalculateCost: (id) => api.post(`/products/${id}/recalculate-cost`),
+  recalculateWeight: (id) => api.post(`/products/${id}/recalculate-weight`),
 };
 
 // ============ PRODUCTIONS ============
