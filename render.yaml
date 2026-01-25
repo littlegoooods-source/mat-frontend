@@ -4,6 +4,9 @@ services:
     env: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    buildArgs:
+      - key: VITE_API_URL
+        value: https://mat-backend.onrender.com
     envVars:
       - key: VITE_API_URL
         value: https://mat-backend.onrender.com
