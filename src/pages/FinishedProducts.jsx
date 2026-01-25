@@ -49,9 +49,10 @@ function FinishedProducts() {
       if (productFilter) params.productId = productFilter;
       
       const response = await finishedProductsApi.getAll(params);
-      setProducts(response.data);
+      setProducts(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading products:', error);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -60,18 +61,20 @@ function FinishedProducts() {
   const loadProductsList = async () => {
     try {
       const response = await productsApi.getAll({ includeArchived: false });
-      setProductsList(response.data);
+      setProductsList(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading products list:', error);
+      setProductsList([]);
     }
   };
 
   const loadSummary = async () => {
     try {
       const response = await finishedProductsApi.getSummary();
-      setSummary(response.data);
+      setSummary(response.data || null);
     } catch (error) {
       console.error('Error loading summary:', error);
+      setSummary(null);
     }
   };
 

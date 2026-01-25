@@ -41,9 +41,10 @@ function Materials() {
         category: categoryFilter,
         includeArchived,
       });
-      setMaterials(response.data);
+      setMaterials(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading materials:', error);
+      setMaterials([]);
     } finally {
       setLoading(false);
     }
@@ -52,9 +53,10 @@ function Materials() {
   const loadCategories = async () => {
     try {
       const response = await materialsApi.getCategories();
-      setCategories(response.data);
+      setCategories(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading categories:', error);
+      setCategories([]);
     }
   };
 

@@ -45,9 +45,10 @@ function Receipts() {
       if (dateTo) params.dateTo = dateTo;
       
       const response = await receiptsApi.getAll(params);
-      setReceipts(response.data);
+      setReceipts(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading receipts:', error);
+      setReceipts([]);
     } finally {
       setLoading(false);
     }
@@ -56,9 +57,10 @@ function Receipts() {
   const loadMaterials = async () => {
     try {
       const response = await materialsApi.getAll({ includeArchived: false });
-      setMaterials(response.data);
+      setMaterials(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading materials:', error);
+      setMaterials([]);
     }
   };
 

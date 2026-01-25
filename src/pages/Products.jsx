@@ -47,9 +47,10 @@ function Products() {
         category: categoryFilter,
         includeArchived,
       });
-      setProducts(response.data);
+      setProducts(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading products:', error);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -58,18 +59,20 @@ function Products() {
   const loadMaterials = async () => {
     try {
       const response = await materialsApi.getAll({ includeArchived: false });
-      setMaterials(response.data);
+      setMaterials(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading materials:', error);
+      setMaterials([]);
     }
   };
 
   const loadCategories = async () => {
     try {
       const response = await productsApi.getCategories();
-      setCategories(response.data);
+      setCategories(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading categories:', error);
+      setCategories([]);
     }
   };
 
@@ -81,16 +84,16 @@ function Products() {
         const p = response.data;
         setEditingProduct(p);
         setFormData({
-          name: p.name,
+          name: p.name || '',
           category: p.category || '',
           description: p.description || '',
-          productionTimeMinutes: p.productionTimeMinutes.toString(),
+          productionTimeMinutes: (p.productionTimeMinutes || 0).toString(),
           fileLinks: p.fileLinks || '',
-          markupPercent: p.markupPercent.toString(),
-          recipeItems: p.recipeItems.map(item => ({
+          markupPercent: (p.markupPercent || 30).toString(),
+          recipeItems: Array.isArray(p.recipeItems) ? p.recipeItems.map(item => ({
             materialId: item.materialId,
             quantity: item.quantity,
-          })),
+          })) : [],
         });
       } catch (error) {
         console.error('Error loading product:', error);

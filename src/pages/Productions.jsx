@@ -43,9 +43,10 @@ function Productions() {
       if (dateTo) params.dateTo = dateTo;
       
       const response = await productionsApi.getAll(params);
-      setProductions(response.data);
+      setProductions(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading productions:', error);
+      setProductions([]);
     } finally {
       setLoading(false);
     }
@@ -54,9 +55,10 @@ function Productions() {
   const loadProducts = async () => {
     try {
       const response = await productsApi.getAll({ includeArchived: false });
-      setProducts(response.data);
+      setProducts(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error loading products:', error);
+      setProducts([]);
     }
   };
 

@@ -39,14 +39,17 @@ function History() {
       };
       
       const response = await historyApi.getAll(params);
-      setHistory(response.data.items);
+      const data = response.data || {};
+      setHistory(Array.isArray(data.items) ? data.items : []);
       setPagination({
         ...pagination,
-        totalCount: response.data.totalCount,
-        totalPages: response.data.totalPages,
+        totalCount: data.totalCount || 0,
+        totalPages: data.totalPages || 0,
       });
     } catch (error) {
       console.error('Error loading history:', error);
+      setHistory([]);
+      setPagination({ ...pagination, totalCount: 0, totalPages: 0 });
     } finally {
       setLoading(false);
     }
