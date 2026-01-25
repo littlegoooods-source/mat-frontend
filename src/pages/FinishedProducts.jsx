@@ -81,7 +81,12 @@ function FinishedProducts() {
   const openSellModal = (product) => {
     setSelectedProduct(product);
     setSellFormData({
-      salePrice: product.costPerUnit ? (product.costPerUnit * 1.3).toFixed(0) : '',
+      // Используем рекомендованную цену, если есть, иначе себестоимость + 30%
+      salePrice: product.recommendedPrice 
+        ? product.recommendedPrice.toString() 
+        : product.costPerUnit 
+          ? (product.costPerUnit * 1.3).toFixed(0) 
+          : '',
       client: '',
       saleDate: format(new Date(), 'yyyy-MM-dd'),
       comment: '',
@@ -325,7 +330,12 @@ function FinishedProducts() {
           <div className="p-3 rounded-lg bg-slate-800/50">
             <p className="text-sm text-slate-400">Изделие</p>
             <p className="font-medium text-white">{selectedProduct?.productName}</p>
-            <p className="text-sm text-slate-400 mt-1">Себестоимость: {formatCurrency(selectedProduct?.costPerUnit)}</p>
+            <div className="flex gap-4 mt-1">
+              <p className="text-sm text-slate-400">Себестоимость: {formatCurrency(selectedProduct?.costPerUnit)}</p>
+              {selectedProduct?.recommendedPrice && (
+                <p className="text-sm text-primary-400">Рек. цена: {formatCurrency(selectedProduct?.recommendedPrice)}</p>
+              )}
+            </div>
           </div>
           
           <Input
