@@ -81,6 +81,7 @@ export const productionsApi = {
     api.get('/productions/check-availability', { params: { productId, quantity } }),
   create: (data) => api.post('/productions', data),
   cancel: (id) => api.post(`/productions/${id}/cancel`),
+  delete: (id) => api.delete(`/productions/${id}`),
 };
 
 // ============ FINISHED PRODUCTS ============

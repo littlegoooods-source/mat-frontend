@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Factory, AlertTriangle, Check, X } from 'lucide-react';
+import { Plus, Factory, AlertTriangle, Check, X, Trash2 } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Table from '../components/Table';
@@ -135,6 +135,17 @@ function Productions() {
     }
   };
 
+  const handleDelete = async (production) => {
+    if (!confirm(`УДАЛИТЬ производство "${production.productName}" (партия ${production.batchNumber})? Запись будет полностью удалена из базы данных.`)) return;
+    
+    try {
+      await productionsApi.delete(production.id);
+      loadProductions();
+    } catch (error) {
+      alert(error.response?.data?.message || 'Ошибка удаления');
+    }
+  };
+
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
@@ -161,15 +172,24 @@ function Productions() {
       val ? <Badge variant="danger">Отменено</Badge> : <Badge variant="success">Активно</Badge>
     )},
     { key: 'actions', title: '', render: (_, row) => (
-      !row.isCancelled && (
+      <div className="flex gap-1">
+        {!row.isCancelled && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); handleCancel(row); }}
+            className="p-2 hover:bg-yellow-500/20 rounded-lg transition-colors text-yellow-400"
+            title="Отменить производство (материалы вернутся)"
+          >
+            <X size={16} />
+          </button>
+        )}
         <button 
-          onClick={(e) => { e.stopPropagation(); handleCancel(row); }}
+          onClick={(e) => { e.stopPropagation(); handleDelete(row); }}
           className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-red-400"
-          title="Отменить производство"
+          title="Удалить из базы данных"
         >
-          <X size={16} />
+          <Trash2 size={16} />
         </button>
-      )
+      </div>
     )},
   ];
 
