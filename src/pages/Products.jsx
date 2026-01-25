@@ -24,8 +24,9 @@ function Products() {
     category: '',
     description: '',
     productionTimeMinutes: '',
+    weight: '',
     fileLinks: '',
-    markupPercent: '30',
+    markupPercent: '100',
     recipeItems: [],
   });
   const [saving, setSaving] = useState(false);
@@ -88,8 +89,9 @@ function Products() {
           category: p.category || '',
           description: p.description || '',
           productionTimeMinutes: (p.productionTimeMinutes || 0).toString(),
+          weight: (p.weight || 0).toString(),
           fileLinks: p.fileLinks || '',
-          markupPercent: (p.markupPercent || 30).toString(),
+          markupPercent: (p.markupPercent || 100).toString(),
           recipeItems: Array.isArray(p.recipeItems) ? p.recipeItems.map(item => ({
             materialId: item.materialId,
             quantity: item.quantity,
@@ -106,8 +108,9 @@ function Products() {
         category: '',
         description: '',
         productionTimeMinutes: '',
+        weight: '',
         fileLinks: '',
-        markupPercent: '30',
+        markupPercent: '100',
         recipeItems: [],
       });
     }
@@ -124,8 +127,9 @@ function Products() {
         category: formData.category || null,
         description: formData.description || null,
         productionTimeMinutes: parseInt(formData.productionTimeMinutes) || 0,
+        weight: parseFloat(formData.weight) || 0,
         fileLinks: formData.fileLinks || null,
-        markupPercent: parseFloat(formData.markupPercent) || 30,
+        markupPercent: parseFloat(formData.markupPercent) || 100,
         recipeItems: formData.recipeItems.map(item => ({
           materialId: item.materialId,
           quantity: parseFloat(item.quantity),
@@ -236,7 +240,7 @@ function Products() {
       <span className="font-medium text-white">{val}</span>
     )},
     { key: 'category', title: 'Категория', render: (val) => val || '-' },
-    { key: 'materialsCount', title: 'Материалов' },
+    { key: 'weight', title: 'Вес (кг)', render: (val) => val ? `${val} кг` : '-' },
     { key: 'productionTimeMinutes', title: 'Время', render: (val) => formatTime(val) },
     { key: 'estimatedCost', title: 'Себестоимость', render: (val) => formatCurrency(val) },
     { key: 'recommendedPrice', title: 'Рек. цена', render: (val) => (
@@ -375,21 +379,46 @@ function Products() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
+              label="Вес изделия (кг)"
+              type="number"
+              step="0.001"
+              min="0"
+              required
+              value={formData.weight}
+              onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+              placeholder="Вес в килограммах"
+            />
+            <Input
               label="Время изготовления (минуты)"
               type="number"
               min="0"
               value={formData.productionTimeMinutes}
               onChange={(e) => setFormData({ ...formData, productionTimeMinutes: e.target.value })}
             />
-            <Input
-              label="Наценка (%)"
-              type="number"
-              min="0"
-              max="1000"
-              value={formData.markupPercent}
-              onChange={(e) => setFormData({ ...formData, markupPercent: e.target.value })}
-            />
           </div>
+
+          {/* Расчёт цен на основе веса */}
+          {formData.weight && parseFloat(formData.weight) > 0 && (
+            <div className="p-3 rounded-lg bg-slate-800/50">
+              <p className="text-sm text-slate-400 mb-2">Расчёт цен (Вес × 2000 / × 4000 руб/кг):</p>
+              <div className="flex gap-6">
+                <div>
+                  <span className="text-slate-400 text-sm">Себестоимость: </span>
+                  <span className="text-white font-medium">
+                    {new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 })
+                      .format(parseFloat(formData.weight) * 2000)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 text-sm">Рек. цена: </span>
+                  <span className="text-primary-400 font-medium">
+                    {new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 })
+                      .format(parseFloat(formData.weight) * 4000)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           <Textarea
             label="Описание"
