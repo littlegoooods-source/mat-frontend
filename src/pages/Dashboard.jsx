@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Factory, ShoppingCart, TrendingUp, AlertTriangle, Clock } from 'lucide-react';
+import { Package, Factory, ShoppingCart, TrendingUp, AlertTriangle, Clock, RefreshCw, WifiOff } from 'lucide-react';
 import Card, { StatCard } from '../components/Card';
 import Badge from '../components/Badge';
 import { reportsApi } from '../services/api';
@@ -9,17 +9,21 @@ import { ru } from 'date-fns/locale';
 function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadDashboard();
   }, []);
 
   const loadDashboard = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const response = await reportsApi.getDashboard();
       setData(response.data);
-    } catch (error) {
-      console.error('Error loading dashboard:', error);
+    } catch (err) {
+      console.error('Error loading dashboard:', err);
+      setError(err.message || 'Не удалось загрузить данные');
     } finally {
       setLoading(false);
     }
@@ -29,6 +33,23 @@ function Dashboard() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-center">
+        <WifiOff size={48} className="text-slate-500 mb-4" />
+        <h2 className="text-xl font-semibold text-white mb-2">Ошибка подключения</h2>
+        <p className="text-slate-400 mb-4">{error}</p>
+        <button
+          onClick={loadDashboard}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white transition-colors"
+        >
+          <RefreshCw size={18} />
+          Повторить
+        </button>
       </div>
     );
   }

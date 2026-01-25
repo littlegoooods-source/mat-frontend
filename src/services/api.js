@@ -5,19 +5,30 @@ const API_BASE_URL = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api`
   : '/api';
 
+console.log('API Base URL:', API_BASE_URL);
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 second timeout
 });
 
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message = error.response?.data?.message || 'Произошла ошибка';
-    console.error('API Error:', message);
+    // Handle network errors
+    if (!error.response) {
+      console.error('Network Error:', error.message);
+      if (error.message === 'Network Error') {
+        console.error('Possible CORS issue or server unreachable');
+      }
+    } else {
+      const message = error.response?.data?.message || error.response?.data?.title || 'Произошла ошибка';
+      console.error('API Error:', error.response.status, message);
+    }
     return Promise.reject(error);
   }
 );
