@@ -164,6 +164,9 @@ function Productions() {
     )},
     { key: 'quantity', title: 'Кол-во', render: (val) => `${val} шт` },
     { key: 'costPerUnit', title: 'Себестоимость', render: (val) => formatCurrency(val) },
+    { key: 'recommendedPricePerUnit', title: 'Рек. цена', render: (val) => val ? (
+      <span className="text-primary-400">{formatCurrency(val)}</span>
+    ) : '-' },
     { key: 'totalCost', title: 'Общая сумма', render: (val) => formatCurrency(val) },
     { key: 'inStockCount', title: 'На складе', render: (val, row) => (
       row.isCancelled ? '-' : `${val} шт`

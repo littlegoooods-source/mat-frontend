@@ -25,6 +25,8 @@ function Products() {
     description: '',
     productionTimeMinutes: '',
     weight: '',
+    estimatedCost: '',
+    recommendedPrice: '',
     fileLinks: '',
     markupPercent: '100',
     recipeItems: [],
@@ -90,6 +92,8 @@ function Products() {
           description: p.description || '',
           productionTimeMinutes: (p.productionTimeMinutes || 0).toString(),
           weight: (p.weight || 0).toString(),
+          estimatedCost: p.estimatedCost ? p.estimatedCost.toString() : '',
+          recommendedPrice: p.recommendedPrice ? p.recommendedPrice.toString() : '',
           fileLinks: p.fileLinks || '',
           markupPercent: (p.markupPercent || 100).toString(),
           recipeItems: Array.isArray(p.recipeItems) ? p.recipeItems.map(item => ({
@@ -109,6 +113,8 @@ function Products() {
         description: '',
         productionTimeMinutes: '',
         weight: '',
+        estimatedCost: '',
+        recommendedPrice: '',
         fileLinks: '',
         markupPercent: '100',
         recipeItems: [],
@@ -128,6 +134,8 @@ function Products() {
         description: formData.description || null,
         productionTimeMinutes: parseInt(formData.productionTimeMinutes) || 0,
         weight: parseFloat(formData.weight) || 0,
+        estimatedCost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : null,
+        recommendedPrice: formData.recommendedPrice ? parseFloat(formData.recommendedPrice) : null,
         fileLinks: formData.fileLinks || null,
         markupPercent: parseFloat(formData.markupPercent) || 100,
         recipeItems: formData.recipeItems.map(item => ({
@@ -217,6 +225,40 @@ function Products() {
       recipeItems: formData.recipeItems.filter((_, i) => i !== index),
     });
   };
+
+  // Расчёт веса из материалов (кг, г)
+  const calculateWeightFromMaterials = () => {
+    let totalWeightKg = 0;
+    
+    formData.recipeItems.forEach(item => {
+      const material = materials.find(m => m.id === parseInt(item.materialId));
+      if (material && item.quantity) {
+        const unit = material.unit.toLowerCase().trim();
+        const qty = parseFloat(item.quantity) || 0;
+        
+        // Если единица измерения - килограммы
+        if (unit === 'кг' || unit === 'kg' || unit === 'килограмм' || unit === 'килограммы') {
+          totalWeightKg += qty;
+        }
+        // Если единица измерения - граммы
+        else if (unit === 'г' || unit === 'g' || unit === 'гр' || unit === 'грамм' || unit === 'граммы') {
+          totalWeightKg += qty / 1000;
+        }
+      }
+    });
+    
+    return totalWeightKg.toFixed(4);
+  };
+
+  // Авто-обновление веса при изменении материалов
+  useEffect(() => {
+    if (formData.recipeItems.length > 0 && materials.length > 0) {
+      const calculatedWeight = calculateWeightFromMaterials();
+      if (calculatedWeight !== formData.weight) {
+        setFormData(prev => ({ ...prev, weight: calculatedWeight }));
+      }
+    }
+  }, [formData.recipeItems, materials]);
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('ru-RU', {
@@ -379,46 +421,32 @@ function Products() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Вес изделия (кг)"
+              label="Себестоимость (руб.)"
               type="number"
-              step="0.001"
+              step="1"
               min="0"
-              required
-              value={formData.weight}
-              onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-              placeholder="Вес в килограммах"
+              value={formData.estimatedCost}
+              onChange={(e) => setFormData({ ...formData, estimatedCost: e.target.value })}
+              placeholder="Введите себестоимость"
             />
             <Input
-              label="Время изготовления (минуты)"
+              label="Рекомендованная цена (руб.)"
               type="number"
+              step="1"
               min="0"
-              value={formData.productionTimeMinutes}
-              onChange={(e) => setFormData({ ...formData, productionTimeMinutes: e.target.value })}
+              value={formData.recommendedPrice}
+              onChange={(e) => setFormData({ ...formData, recommendedPrice: e.target.value })}
+              placeholder="Введите рек. цену"
             />
           </div>
 
-          {/* Расчёт цен на основе веса */}
-          {formData.weight && parseFloat(formData.weight) > 0 && (
-            <div className="p-3 rounded-lg bg-slate-800/50">
-              <p className="text-sm text-slate-400 mb-2">Расчёт цен (Вес × 2000 / × 4000 руб/кг):</p>
-              <div className="flex gap-6">
-                <div>
-                  <span className="text-slate-400 text-sm">Себестоимость: </span>
-                  <span className="text-white font-medium">
-                    {new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 })
-                      .format(parseFloat(formData.weight) * 2000)}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 text-sm">Рек. цена: </span>
-                  <span className="text-primary-400 font-medium">
-                    {new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 })
-                      .format(parseFloat(formData.weight) * 4000)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
+          <Input
+            label="Время изготовления (минуты)"
+            type="number"
+            min="0"
+            value={formData.productionTimeMinutes}
+            onChange={(e) => setFormData({ ...formData, productionTimeMinutes: e.target.value })}
+          />
 
           <Textarea
             label="Описание"
@@ -482,6 +510,19 @@ function Products() {
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Отображение рассчитанного веса */}
+            {formData.recipeItems.length > 0 && parseFloat(formData.weight) > 0 && (
+              <div className="p-3 rounded-lg bg-primary-500/10 border border-primary-500/30">
+                <p className="text-sm text-slate-300">
+                  <span className="text-slate-400">Вес изделия (авто): </span>
+                  <span className="font-medium text-primary-400">{parseFloat(formData.weight).toFixed(2)} кг</span>
+                  <span className="text-slate-500 ml-2">
+                    ({(parseFloat(formData.weight) * 1000).toFixed(0)} г)
+                  </span>
+                </p>
               </div>
             )}
           </div>
