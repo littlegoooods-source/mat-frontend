@@ -1,4 +1,4 @@
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
@@ -8,9 +8,13 @@ import {
   ShoppingCart, 
   History,
   Menu,
-  X
+  X,
+  LogOut,
+  Building2,
+  ChevronDown,
+  User
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Главная' },
@@ -22,8 +26,36 @@ const navItems = [
   { path: '/history', icon: History, label: 'История' },
 ];
 
-function Layout() {
+function Layout({ user, organizations, onLogout, onSwitchOrganization }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const orgDropdownRef = useRef(null);
+  const userDropdownRef = useRef(null);
+  const navigate = useNavigate();
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (orgDropdownRef.current && !orgDropdownRef.current.contains(event.target)) {
+        setOrgDropdownOpen(false);
+      }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+        setUserDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    }
+    navigate('/login');
+  };
+
+  const currentOrg = organizations?.find(o => o.organizationId === user?.currentOrganizationId);
 
   return (
     <div className="min-h-screen flex">
@@ -51,8 +83,58 @@ function Layout() {
             <p className="text-sm text-slate-400 mt-1">Система учёта</p>
           </div>
 
+          {/* Organization Switcher */}
+          {organizations && organizations.length > 0 && (
+            <div className="p-4 border-b border-slate-700/50" ref={orgDropdownRef}>
+              <button
+                onClick={() => setOrgDropdownOpen(!orgDropdownOpen)}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Building2 size={18} className="text-primary-400 flex-shrink-0" />
+                  <span className="truncate text-sm font-medium text-slate-200">
+                    {currentOrg?.organizationName || 'Выберите организацию'}
+                  </span>
+                </div>
+                <ChevronDown 
+                  size={16} 
+                  className={`text-slate-400 flex-shrink-0 transition-transform ${orgDropdownOpen ? 'rotate-180' : ''}`} 
+                />
+              </button>
+              
+              {orgDropdownOpen && (
+                <div className="absolute left-4 right-4 mt-2 bg-slate-800 rounded-lg shadow-xl border border-slate-700 z-50 max-h-64 overflow-auto">
+                  {organizations.map((org) => (
+                    <button
+                      key={org.organizationId}
+                      onClick={() => {
+                        if (org.organizationId !== user?.currentOrganizationId) {
+                          onSwitchOrganization(org.organizationId);
+                        }
+                        setOrgDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 hover:bg-slate-700/50 transition-colors flex items-center gap-2 ${
+                        org.organizationId === user?.currentOrganizationId 
+                          ? 'bg-primary-600/20 text-primary-400' 
+                          : 'text-slate-300'
+                      }`}
+                    >
+                      <Building2 size={16} />
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">{org.organizationName}</div>
+                        <div className="text-xs text-slate-500">
+                          {org.isPersonal ? 'Личное' : org.role}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1">
+          <nav className="flex-1 p-4 space-y-1 overflow-auto">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
@@ -71,6 +153,51 @@ function Layout() {
               </NavLink>
             ))}
           </nav>
+
+          {/* User menu */}
+          <div className="p-4 border-t border-slate-700/50" ref={userDropdownRef}>
+            <button
+              onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700/30 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-full bg-primary-600/30 flex items-center justify-center">
+                <User size={16} className="text-primary-400" />
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <div className="text-sm font-medium text-slate-200 truncate">
+                  {user?.fullName || user?.username || 'Пользователь'}
+                </div>
+                <div className="text-xs text-slate-500 truncate">
+                  {user?.email}
+                </div>
+              </div>
+              <ChevronDown 
+                size={16} 
+                className={`text-slate-400 flex-shrink-0 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} 
+              />
+            </button>
+            
+            {userDropdownOpen && (
+              <div className="absolute left-4 right-4 bottom-20 bg-slate-800 rounded-lg shadow-xl border border-slate-700 z-50">
+                <div className="p-3 border-b border-slate-700">
+                  <div className="text-sm font-medium text-slate-200">{user?.fullName || user?.username}</div>
+                  <div className="text-xs text-slate-500">{user?.email}</div>
+                  {currentOrg && (
+                    <div className="text-xs text-primary-400 mt-1">
+                      {currentOrg.role === 'Owner' ? 'Владелец' : 'Участник'} · {currentOrg.organizationName}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-3 hover:bg-slate-700/50 transition-colors flex items-center gap-2 text-red-400"
+                >
+                  <LogOut size={16} />
+                  <span>Выйти</span>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Footer */}
           <div className="p-4 border-t border-slate-700/50">

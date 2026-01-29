@@ -17,23 +17,122 @@ const api = axios.create({
   timeout: 30000, // 30 second timeout
 });
 
-// Response interceptor for error handling
+// ==================== AUTH TOKEN MANAGEMENT ====================
+
+// Get token from localStorage
+const getToken = () => localStorage.getItem('accessToken');
+const getRefreshToken = () => localStorage.getItem('refreshToken');
+
+// Set tokens in localStorage
+const setTokens = (accessToken, refreshToken) => {
+  localStorage.setItem('accessToken', accessToken);
+  localStorage.setItem('refreshToken', refreshToken);
+};
+
+// Clear tokens
+const clearTokens = () => {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+  localStorage.removeItem('organizations');
+};
+
+// Request interceptor - add auth header
+api.interceptors.request.use(
+  (config) => {
+    const token = getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor - handle 401 and refresh token
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+    
     // Handle network errors
     if (!error.response) {
       console.error('Network Error:', error.message);
       if (error.message === 'Network Error') {
         console.error('Possible CORS issue or server unreachable');
       }
-    } else {
-      const message = error.response?.data?.message || error.response?.data?.title || 'Произошла ошибка';
-      console.error('API Error:', error.response.status, message);
+      return Promise.reject(error);
     }
+    
+    // Handle 401 - try to refresh token
+    if (error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      const refreshToken = getRefreshToken();
+      if (refreshToken) {
+        try {
+          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+            refreshToken
+          });
+          
+          const { accessToken, refreshToken: newRefreshToken } = response.data;
+          setTokens(accessToken, newRefreshToken);
+          
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          return api(originalRequest);
+        } catch (refreshError) {
+          clearTokens();
+          window.location.href = '/login';
+          return Promise.reject(refreshError);
+        }
+      } else {
+        clearTokens();
+        window.location.href = '/login';
+      }
+    }
+    
+    const message = error.response?.data?.message || error.response?.data?.title || 'Произошла ошибка';
+    console.error('API Error:', error.response.status, message);
     return Promise.reject(error);
   }
 );
+
+// ============ AUTH API ============
+export const authApi = {
+  register: (data) => api.post('/auth/register', data),
+  login: (data) => api.post('/auth/login', data),
+  logout: () => api.post('/auth/logout', { refreshToken: getRefreshToken() }),
+  refresh: () => api.post('/auth/refresh', { refreshToken: getRefreshToken() }),
+  me: () => api.get('/auth/me'),
+  getOrganizations: () => api.get('/auth/organizations'),
+  switchOrganization: (organizationId) => api.post('/auth/switch-organization', { organizationId }),
+};
+
+// ============ ORGANIZATIONS API ============
+export const organizationsApi = {
+  getAll: () => api.get('/organizations'),
+  getById: (id) => api.get(`/organizations/${id}`),
+  create: (data) => api.post('/organizations', data),
+  update: (id, data) => api.put(`/organizations/${id}`, data),
+  delete: (id) => api.delete(`/organizations/${id}`),
+  regenerateCode: (id) => api.post(`/organizations/${id}/regenerate-code`),
+  // Members
+  getMembers: (id) => api.get(`/organizations/${id}/members`),
+  removeMember: (orgId, memberId) => api.delete(`/organizations/${orgId}/members/${memberId}`),
+  leave: (id) => api.post(`/organizations/${id}/leave`),
+  transferOwnership: (id, newOwnerId) => api.post(`/organizations/${id}/transfer-ownership`, { newOwnerId }),
+  // Invitations
+  invite: (id, email) => api.post(`/organizations/${id}/invite`, { email }),
+  getInvitations: (id) => api.get(`/organizations/${id}/invitations`),
+};
+
+// ============ INVITATIONS API ============
+export const invitationsApi = {
+  getMyInvitations: () => api.get('/invitations'),
+  accept: (token) => api.post(`/invitations/${token}/accept`),
+  reject: (token) => api.post(`/invitations/${token}/reject`),
+  cancel: (id) => api.delete(`/invitations/${id}`),
+};
 
 // ============ MATERIALS ============
 export const materialsApi = {
@@ -111,5 +210,8 @@ export const historyApi = {
   getAll: (params) => api.get('/history', { params }),
   getRecent: (count = 10) => api.get('/history/recent', { params: { count } }),
 };
+
+// Export helper functions
+export { getToken, setTokens, clearTokens };
 
 export default api;
