@@ -16,7 +16,8 @@ import {
   Settings as SettingsIcon,
   Bell,
   ArrowRight,
-  Key
+  Key,
+  Pencil
 } from 'lucide-react';
 import { organizationsApi, invitationsApi, authApi } from '../services/api';
 
@@ -48,6 +49,10 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
   // Join by code form
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [joinCode, setJoinCode] = useState('');
+  
+  // Rename organization
+  const [renamingOrgId, setRenamingOrgId] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
 
   const currentOrg = organizations?.find(o => o.organizationId === user?.currentOrganizationId);
 
@@ -306,6 +311,43 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
     }
   };
 
+  const startRenaming = (org) => {
+    setRenamingOrgId(org.organizationId);
+    setRenameValue(org.organizationName);
+  };
+
+  const cancelRenaming = () => {
+    setRenamingOrgId(null);
+    setRenameValue('');
+  };
+
+  const handleRenameOrganization = async (e, orgId) => {
+    e.preventDefault();
+    if (!renameValue.trim()) return;
+    
+    try {
+      setLoading(true);
+      setError('');
+      await organizationsApi.update(orgId, { name: renameValue.trim() });
+      
+      setSuccess('Название организации обновлено');
+      setRenamingOrgId(null);
+      setRenameValue('');
+      
+      // Refresh organizations list
+      if (onOrganizationsUpdate) {
+        const response = await authApi.getOrganizations();
+        onOrganizationsUpdate(response.data);
+      }
+      // Reload organization details
+      await loadAllOrganizationDetails();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Ошибка при переименовании');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     setSuccess('Скопировано в буфер обмена');
@@ -323,8 +365,8 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
     }
   }, [success, error]);
 
-  // Get organizations where user is owner (for invite tab)
-  const ownedOrganizations = organizations?.filter(o => o.role === 'Owner' && !o.isPersonal) || [];
+  // Get organizations where user is owner (for invite tab) - now includes personal orgs
+  const ownedOrganizations = organizations?.filter(o => o.role === 'Owner') || [];
 
   return (
     <div className="space-y-6">
@@ -523,19 +565,55 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                         <div className="flex items-center gap-3 flex-1">
                           <Building2 size={20} className={isActive ? 'text-primary-400' : 'text-slate-400'} />
                           <div className="flex-1">
-                            <div className="font-medium text-slate-100 flex items-center gap-2 flex-wrap">
-                              {org.organizationName}
-                              {org.isPersonal && (
-                                <span className="text-xs bg-slate-700 text-slate-400 px-2 py-0.5 rounded">
-                                  Личное
-                                </span>
-                              )}
-                              {isActive && (
-                                <span className="text-xs bg-primary-600 text-white px-2 py-0.5 rounded">
-                                  Активная
-                                </span>
-                              )}
-                            </div>
+                            {/* Name with rename functionality */}
+                            {renamingOrgId === org.organizationId ? (
+                              <form onSubmit={(e) => handleRenameOrganization(e, org.organizationId)} className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={renameValue}
+                                  onChange={(e) => setRenameValue(e.target.value)}
+                                  className="flex-1 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-slate-100 text-sm focus:outline-none focus:border-primary-500"
+                                  autoFocus
+                                />
+                                <button
+                                  type="submit"
+                                  disabled={loading || !renameValue.trim()}
+                                  className="p-1 text-green-400 hover:bg-green-500/20 rounded disabled:opacity-50"
+                                >
+                                  <Check size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={cancelRenaming}
+                                  className="p-1 text-red-400 hover:bg-red-500/20 rounded"
+                                >
+                                  <X size={16} />
+                                </button>
+                              </form>
+                            ) : (
+                              <div className="font-medium text-slate-100 flex items-center gap-2 flex-wrap">
+                                {org.organizationName}
+                                {org.role === 'Owner' && (
+                                  <button
+                                    onClick={() => startRenaming(org)}
+                                    className="p-1 text-slate-500 hover:text-slate-300 hover:bg-slate-700 rounded transition-colors"
+                                    title="Переименовать"
+                                  >
+                                    <Pencil size={12} />
+                                  </button>
+                                )}
+                                {org.isPersonal && (
+                                  <span className="text-xs bg-slate-700 text-slate-400 px-2 py-0.5 rounded">
+                                    Личное
+                                  </span>
+                                )}
+                                {isActive && (
+                                  <span className="text-xs bg-primary-600 text-white px-2 py-0.5 rounded">
+                                    Активная
+                                  </span>
+                                )}
+                              </div>
+                            )}
                             <div className="text-sm text-slate-400 flex items-center gap-2 mt-1">
                               {org.role === 'Owner' ? (
                                 <><Crown size={12} className="text-yellow-500" /> Владелец</>
@@ -560,16 +638,14 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                             </button>
                           )}
                           
-                          {/* Manage button */}
-                          {!org.isPersonal && (
-                            <button
-                              onClick={() => isExpanded ? setSelectedOrgId(null) : loadOrganizationMembers(org.organizationId)}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm rounded-lg transition-colors"
-                            >
-                              <Users size={14} />
-                              {isExpanded ? 'Скрыть' : 'Управление'}
-                            </button>
-                          )}
+                          {/* Manage button - now available for all orgs including personal */}
+                          <button
+                            onClick={() => isExpanded ? setSelectedOrgId(null) : loadOrganizationMembers(org.organizationId)}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm rounded-lg transition-colors"
+                          >
+                            <Users size={14} />
+                            {isExpanded ? 'Скрыть' : 'Управление'}
+                          </button>
                           
                           {/* Leave button */}
                           {!org.isPersonal && org.role !== 'Owner' && (
@@ -584,8 +660,8 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                         </div>
                       </div>
                       
-                      {/* Join Code (for owners) */}
-                      {org.role === 'Owner' && !org.isPersonal && orgDetails?.joinCode && (
+                      {/* Join Code (for owners) - now also for personal orgs */}
+                      {org.role === 'Owner' && orgDetails?.joinCode && (
                         <div className="mt-3 p-3 bg-slate-900/50 rounded-lg">
                           <div className="flex items-center gap-2 text-sm text-slate-400 mb-2">
                             <Key size={14} />
@@ -615,8 +691,8 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                       )}
                     </div>
                     
-                    {/* Expanded Management Section */}
-                    {isExpanded && !org.isPersonal && (
+                    {/* Expanded Management Section - now also for personal orgs */}
+                    {isExpanded && (
                       <div className="border-t border-slate-700 p-4 space-y-4">
                         {/* Invite Form */}
                         {org.role === 'Owner' && (
