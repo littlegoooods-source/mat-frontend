@@ -8,6 +8,7 @@ import Products from './pages/Products';
 import Productions from './pages/Productions';
 import FinishedProducts from './pages/FinishedProducts';
 import History from './pages/History';
+import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import { Home } from 'lucide-react';
@@ -99,6 +100,11 @@ function App() {
     }
   };
 
+  const handleOrganizationsUpdate = (orgsData) => {
+    setOrganizations(orgsData);
+    localStorage.setItem('organizations', JSON.stringify(orgsData));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -146,6 +152,13 @@ function App() {
           <Route path="productions" element={<Productions />} />
           <Route path="finished-products" element={<FinishedProducts />} />
           <Route path="history" element={<History />} />
+          <Route path="settings" element={
+            <Settings 
+              user={user} 
+              organizations={organizations}
+              onOrganizationsUpdate={handleOrganizationsUpdate}
+            />
+          } />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

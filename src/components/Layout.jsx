@@ -12,7 +12,8 @@ import {
   LogOut,
   Building2,
   ChevronDown,
-  User
+  User,
+  Settings
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
@@ -24,6 +25,7 @@ const navItems = [
   { path: '/productions', icon: Factory, label: 'Производство' },
   { path: '/finished-products', icon: ShoppingCart, label: 'Готовая продукция' },
   { path: '/history', icon: History, label: 'История' },
+  { path: '/settings', icon: Settings, label: 'Настройки' },
 ];
 
 function Layout({ user, organizations, onLogout, onSwitchOrganization }) {
