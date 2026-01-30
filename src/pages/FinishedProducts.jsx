@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Package, Trash2, RotateCcw, DollarSign } from 'lucide-react';
+import { ShoppingCart, Package, Trash2, RotateCcw, DollarSign, X } from 'lucide-react';
 import Card, { StatCard } from '../components/Card';
 import Button from '../components/Button';
 import Table from '../components/Table';
@@ -157,6 +157,18 @@ function FinishedProducts() {
     }
   };
 
+  const handleDelete = async (product) => {
+    if (!confirm(`Вы уверены, что хотите удалить "${product.productName}"? Это действие нельзя отменить.`)) return;
+    
+    try {
+      await finishedProductsApi.delete(product.id);
+      loadProducts();
+      loadSummary();
+    } catch (error) {
+      alert(error.response?.data?.message || 'Ошибка удаления');
+    }
+  };
+
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
@@ -208,10 +220,17 @@ function FinishedProducts() {
             </button>
             <button 
               onClick={(e) => { e.stopPropagation(); openWriteOffModal(row); }}
-              className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-red-400"
-              title="Списать"
+              className="p-2 hover:bg-orange-500/20 rounded-lg transition-colors text-orange-400"
+              title="Списать как брак"
             >
               <Trash2 size={16} />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); handleDelete(row); }}
+              className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-red-400"
+              title="Удалить"
+            >
+              <X size={16} />
             </button>
           </>
         )}

@@ -116,6 +116,7 @@ export const organizationsApi = {
   update: (id, data) => api.put(`/organizations/${id}`, data),
   delete: (id) => api.delete(`/organizations/${id}`),
   regenerateCode: (id) => api.post(`/organizations/${id}/regenerate-code`),
+  joinByCode: (joinCode) => api.post('/organizations/join', { joinCode }),
   // Members
   getMembers: (id) => api.get(`/organizations/${id}/members`),
   removeMember: (orgId, memberId) => api.delete(`/organizations/${orgId}/members/${memberId}`),
@@ -191,6 +192,7 @@ export const finishedProductsApi = {
   writeOff: (id, data) => api.post(`/finishedproducts/${id}/write-off`, data),
   returnToStock: (id) => api.post(`/finishedproducts/${id}/return-to-stock`),
   update: (id, data) => api.put(`/finishedproducts/${id}`, data),
+  delete: (id) => api.delete(`/finishedproducts/${id}`),
   getSummary: () => api.get('/finishedproducts/summary'),
   getStatuses: () => api.get('/finishedproducts/statuses'),
 };

@@ -44,6 +44,10 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteOrgId, setInviteOrgId] = useState(null);
+  
+  // Join by code form
+  const [showJoinForm, setShowJoinForm] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
 
   const currentOrg = organizations?.find(o => o.organizationId === user?.currentOrganizationId);
 
@@ -129,6 +133,31 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Ошибка при создании организации');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJoinByCode = async (e) => {
+    e.preventDefault();
+    if (!joinCode.trim()) return;
+    
+    try {
+      setLoading(true);
+      setError('');
+      await organizationsApi.joinByCode(joinCode.trim().toUpperCase());
+      
+      setSuccess('Вы успешно присоединились к организации!');
+      setJoinCode('');
+      setShowJoinForm(false);
+      
+      // Refresh organizations list
+      if (onOrganizationsUpdate) {
+        const response = await authApi.getOrganizations();
+        onOrganizationsUpdate(response.data);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Ошибка при присоединении к организации');
     } finally {
       setLoading(false);
     }
@@ -360,8 +389,15 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
       {/* Organizations Tab */}
       {activeTab === 'organizations' && (
         <div className="space-y-6">
-          {/* Create Organization Button */}
-          <div className="flex justify-end">
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setShowJoinForm(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+            >
+              <Key size={18} />
+              Присоединиться по коду
+            </button>
             <button
               onClick={() => setShowCreateOrg(true)}
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors"
@@ -370,6 +406,48 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
               Создать организацию
             </button>
           </div>
+
+          {/* Join Organization Form */}
+          {showJoinForm && (
+            <div className="glass p-6 rounded-xl">
+              <h3 className="text-lg font-semibold text-slate-100 mb-4">Присоединиться к организации</h3>
+              <form onSubmit={handleJoinByCode} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                    Код организации *
+                  </label>
+                  <input
+                    type="text"
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:border-primary-500 font-mono text-lg tracking-wider"
+                    placeholder="XXXXXXXX"
+                    maxLength={20}
+                    required
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Введите код, который вам прислал владелец организации
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={loading || !joinCode.trim()}
+                    className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {loading ? 'Присоединение...' : 'Присоединиться'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowJoinForm(false); setJoinCode(''); }}
+                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors"
+                  >
+                    Отмена
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
 
           {/* Create Organization Form */}
           {showCreateOrg && (
