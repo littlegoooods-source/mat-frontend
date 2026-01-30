@@ -157,6 +157,7 @@ function App() {
               user={user} 
               organizations={organizations}
               onOrganizationsUpdate={handleOrganizationsUpdate}
+              onSwitchOrganization={handleSwitchOrganization}
             />
           } />
           <Route path="*" element={<NotFound />} />

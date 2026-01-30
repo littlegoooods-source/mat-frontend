@@ -14,20 +14,23 @@ import {
   Crown,
   User,
   Settings as SettingsIcon,
-  Bell
+  Bell,
+  ArrowRight,
+  Key
 } from 'lucide-react';
 import { organizationsApi, invitationsApi, authApi } from '../services/api';
 
-export default function Settings({ user, organizations, onOrganizationsUpdate }) {
+export default function Settings({ user, organizations, onOrganizationsUpdate, onSwitchOrganization }) {
   const [activeTab, setActiveTab] = useState('organizations');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
   // Organizations state
-  const [orgDetails, setOrgDetails] = useState(null);
+  const [orgDetailsMap, setOrgDetailsMap] = useState({});
   const [members, setMembers] = useState([]);
   const [sentInvitations, setSentInvitations] = useState([]);
+  const [selectedOrgId, setSelectedOrgId] = useState(null);
   
   // Invitations state
   const [myInvitations, setMyInvitations] = useState([]);
@@ -40,32 +43,54 @@ export default function Settings({ user, organizations, onOrganizationsUpdate })
   // Invite form
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteOrgId, setInviteOrgId] = useState(null);
 
   const currentOrg = organizations?.find(o => o.organizationId === user?.currentOrganizationId);
 
   useEffect(() => {
-    if (currentOrg) {
-      loadOrganizationDetails();
-    }
+    loadAllOrganizationDetails();
     loadMyInvitations();
-  }, [currentOrg?.organizationId]);
+  }, [organizations]);
 
-  const loadOrganizationDetails = async () => {
-    if (!currentOrg) return;
+  const loadAllOrganizationDetails = async () => {
+    if (!organizations?.length) return;
     
     try {
-      setLoading(true);
-      const [detailsRes, membersRes, invitationsRes] = await Promise.all([
-        organizationsApi.getById(currentOrg.organizationId),
-        organizationsApi.getMembers(currentOrg.organizationId),
-        currentOrg.role === 'Owner' ? organizationsApi.getInvitations(currentOrg.organizationId) : Promise.resolve({ data: [] })
-      ]);
+      const detailsPromises = organizations.map(async (org) => {
+        try {
+          const response = await organizationsApi.getById(org.organizationId);
+          return { orgId: org.organizationId, details: response.data };
+        } catch (err) {
+          return { orgId: org.organizationId, details: null };
+        }
+      });
       
-      setOrgDetails(detailsRes.data);
-      setMembers(membersRes.data);
-      setSentInvitations(invitationsRes.data);
+      const results = await Promise.all(detailsPromises);
+      const map = {};
+      results.forEach(r => {
+        if (r.details) map[r.orgId] = r.details;
+      });
+      setOrgDetailsMap(map);
     } catch (err) {
       console.error('Failed to load organization details:', err);
+    }
+  };
+
+  const loadOrganizationMembers = async (orgId) => {
+    try {
+      setLoading(true);
+      const [membersRes, invitationsRes] = await Promise.all([
+        organizationsApi.getMembers(orgId),
+        organizations.find(o => o.organizationId === orgId)?.role === 'Owner' 
+          ? organizationsApi.getInvitations(orgId) 
+          : Promise.resolve({ data: [] })
+      ]);
+      
+      setMembers(membersRes.data);
+      setSentInvitations(invitationsRes.data);
+      setSelectedOrgId(orgId);
+    } catch (err) {
+      console.error('Failed to load organization members:', err);
     } finally {
       setLoading(false);
     }
@@ -109,19 +134,38 @@ export default function Settings({ user, organizations, onOrganizationsUpdate })
     }
   };
 
-  const handleInvite = async (e) => {
+  const handleSwitchOrganization = async (orgId) => {
+    if (orgId === user?.currentOrganizationId) return;
+    
+    try {
+      setLoading(true);
+      if (onSwitchOrganization) {
+        await onSwitchOrganization(orgId);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Ошибка при переключении организации');
+      setLoading(false);
+    }
+  };
+
+  const handleInvite = async (e, orgId = null) => {
     e.preventDefault();
-    if (!inviteEmail.trim() || !currentOrg) return;
+    const targetOrgId = orgId || inviteOrgId || currentOrg?.organizationId;
+    if (!inviteEmail.trim() || !targetOrgId) return;
     
     try {
       setLoading(true);
       setError('');
-      await organizationsApi.invite(currentOrg.organizationId, inviteEmail.trim());
+      await organizationsApi.invite(targetOrgId, inviteEmail.trim());
       
       setSuccess(`Приглашение отправлено на ${inviteEmail}`);
       setInviteEmail('');
       setShowInviteForm(false);
-      loadOrganizationDetails();
+      setInviteOrgId(null);
+      
+      if (selectedOrgId === targetOrgId) {
+        loadOrganizationMembers(targetOrgId);
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Ошибка при отправке приглашения');
     } finally {
@@ -168,7 +212,7 @@ export default function Settings({ user, organizations, onOrganizationsUpdate })
     try {
       setLoading(true);
       await invitationsApi.cancel(invitationId);
-      loadOrganizationDetails();
+      if (selectedOrgId) loadOrganizationMembers(selectedOrgId);
     } catch (err) {
       setError(err.response?.data?.message || 'Ошибка при отмене приглашения');
     } finally {
@@ -181,9 +225,9 @@ export default function Settings({ user, organizations, onOrganizationsUpdate })
     
     try {
       setLoading(true);
-      await organizationsApi.removeMember(currentOrg.organizationId, memberId);
+      await organizationsApi.removeMember(selectedOrgId, memberId);
       setSuccess(`${memberName} удалён из организации`);
-      loadOrganizationDetails();
+      loadOrganizationMembers(selectedOrgId);
     } catch (err) {
       setError(err.response?.data?.message || 'Ошибка при удалении участника');
     } finally {
@@ -191,15 +235,17 @@ export default function Settings({ user, organizations, onOrganizationsUpdate })
     }
   };
 
-  const handleLeaveOrganization = async () => {
-    if (!currentOrg || currentOrg.isPersonal) return;
-    if (!confirm(`Вы уверены, что хотите покинуть организацию "${currentOrg.organizationName}"?`)) return;
+  const handleLeaveOrganization = async (orgId) => {
+    const org = organizations.find(o => o.organizationId === orgId);
+    if (!org || org.isPersonal) return;
+    if (!confirm(`Вы уверены, что хотите покинуть организацию "${org.organizationName}"?`)) return;
     
     try {
       setLoading(true);
-      await organizationsApi.leave(currentOrg.organizationId);
+      await organizationsApi.leave(orgId);
       
       setSuccess('Вы покинули организацию');
+      setSelectedOrgId(null);
       
       // Refresh organizations list
       if (onOrganizationsUpdate) {
@@ -213,13 +259,16 @@ export default function Settings({ user, organizations, onOrganizationsUpdate })
     }
   };
 
-  const handleRegenerateCode = async () => {
+  const handleRegenerateCode = async (orgId) => {
     if (!confirm('Сгенерировать новый код приглашения? Старый код перестанет работать.')) return;
     
     try {
       setLoading(true);
-      const response = await organizationsApi.regenerateCode(currentOrg.organizationId);
-      setOrgDetails(prev => ({ ...prev, joinCode: response.data.joinCode }));
+      const response = await organizationsApi.regenerateCode(orgId);
+      setOrgDetailsMap(prev => ({
+        ...prev,
+        [orgId]: { ...prev[orgId], joinCode: response.data.joinCode }
+      }));
       setSuccess('Код приглашения обновлён');
     } catch (err) {
       setError(err.response?.data?.message || 'Ошибка при обновлении кода');
@@ -244,6 +293,9 @@ export default function Settings({ user, organizations, onOrganizationsUpdate })
       return () => clearTimeout(timer);
     }
   }, [success, error]);
+
+  // Get organizations where user is owner (for invite tab)
+  const ownedOrganizations = organizations?.filter(o => o.role === 'Owner' && !o.isPersonal) || [];
 
   return (
     <div className="space-y-6">
@@ -372,293 +424,363 @@ export default function Settings({ user, organizations, onOrganizationsUpdate })
           {/* My Organizations List */}
           <div className="glass p-6 rounded-xl">
             <h3 className="text-lg font-semibold text-slate-100 mb-4">Мои организации</h3>
-            <div className="space-y-3">
-              {organizations?.map((org) => (
-                <div
-                  key={org.organizationId}
-                  className={`p-4 rounded-lg border transition-colors ${
-                    org.organizationId === user?.currentOrganizationId
-                      ? 'bg-primary-600/20 border-primary-500/50'
-                      : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Building2 size={20} className={
-                        org.organizationId === user?.currentOrganizationId 
-                          ? 'text-primary-400' 
-                          : 'text-slate-400'
-                      } />
-                      <div>
-                        <div className="font-medium text-slate-100 flex items-center gap-2">
-                          {org.organizationName}
-                          {org.isPersonal && (
-                            <span className="text-xs bg-slate-700 text-slate-400 px-2 py-0.5 rounded">
-                              Личное
-                            </span>
-                          )}
-                          {org.organizationId === user?.currentOrganizationId && (
-                            <span className="text-xs bg-primary-600 text-white px-2 py-0.5 rounded">
-                              Активная
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-sm text-slate-400 flex items-center gap-2">
-                          {org.role === 'Owner' ? (
-                            <><Crown size={12} className="text-yellow-500" /> Владелец</>
-                          ) : (
-                            <><User size={12} /> Участник</>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    {!org.isPersonal && org.role !== 'Owner' && (
-                      <button
-                        onClick={handleLeaveOrganization}
-                        disabled={org.organizationId !== user?.currentOrganizationId}
-                        className="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition-colors disabled:opacity-50"
-                        title="Покинуть организацию"
-                      >
-                        <LogOut size={18} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Current Organization Details */}
-          {currentOrg && !currentOrg.isPersonal && (
-            <div className="glass p-6 rounded-xl">
-              <h3 className="text-lg font-semibold text-slate-100 mb-4">
-                Текущая организация: {currentOrg.organizationName}
-              </h3>
-
-              {/* Join Code (only for owners) */}
-              {currentOrg.role === 'Owner' && orgDetails?.joinCode && (
-                <div className="mb-6 p-4 bg-slate-800/50 rounded-lg">
-                  <div className="text-sm text-slate-400 mb-2">Код для присоединения:</div>
-                  <div className="flex items-center gap-3">
-                    <code className="text-xl font-mono text-primary-400 bg-slate-900 px-4 py-2 rounded">
-                      {orgDetails.joinCode}
-                    </code>
-                    <button
-                      onClick={() => copyToClipboard(orgDetails.joinCode)}
-                      className="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-lg transition-colors"
-                      title="Копировать"
-                    >
-                      <Copy size={18} />
-                    </button>
-                    <button
-                      onClick={handleRegenerateCode}
-                      disabled={loading}
-                      className="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-lg transition-colors"
-                      title="Сгенерировать новый код"
-                    >
-                      <RefreshCw size={18} />
-                    </button>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-2">
-                    Поделитесь этим кодом с людьми, которых хотите пригласить при регистрации
-                  </p>
-                </div>
-              )}
-
-              {/* Members */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-slate-200">
-                    <Users size={16} className="inline mr-2" />
-                    Участники ({members.length})
-                  </h4>
-                  {currentOrg.role === 'Owner' && (
-                    <button
-                      onClick={() => setShowInviteForm(true)}
-                      className="flex items-center gap-1 text-sm text-primary-400 hover:text-primary-300"
-                    >
-                      <UserPlus size={16} />
-                      Пригласить
-                    </button>
-                  )}
-                </div>
-
-                {/* Invite Form */}
-                {showInviteForm && (
-                  <form onSubmit={handleInvite} className="mb-4 p-4 bg-slate-800/50 rounded-lg">
-                    <div className="flex gap-2">
-                      <input
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        className="flex-1 px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:border-primary-500"
-                        placeholder="email@example.com"
-                        required
-                      />
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        Отправить
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowInviteForm(false)}
-                        className="px-3 py-2 text-slate-400 hover:text-slate-200"
-                      >
-                        <X size={18} />
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                <div className="space-y-2">
-                  {members.map((member) => (
-                    <div
-                      key={member.userId}
-                      className="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center">
-                          <User size={16} className="text-slate-400" />
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-slate-200">
-                            {member.fullName || member.username}
-                            {member.userId === user?.id && (
-                              <span className="text-xs text-slate-500 ml-2">(вы)</span>
-                            )}
-                          </div>
-                          <div className="text-xs text-slate-500">{member.email}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          member.role === 'Owner' 
-                            ? 'bg-yellow-500/20 text-yellow-400' 
-                            : 'bg-slate-700 text-slate-400'
-                        }`}>
-                          {member.role === 'Owner' ? 'Владелец' : 'Участник'}
-                        </span>
-                        {currentOrg.role === 'Owner' && member.role !== 'Owner' && (
-                          <button
-                            onClick={() => handleRemoveMember(member.userId, member.fullName || member.username)}
-                            className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
-                            title="Удалить из организации"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Sent Invitations (only for owners) */}
-              {currentOrg.role === 'Owner' && sentInvitations.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-slate-200 mb-3">
-                    <Mail size={16} className="inline mr-2" />
-                    Отправленные приглашения
-                  </h4>
-                  <div className="space-y-2">
-                    {sentInvitations.map((inv) => (
-                      <div
-                        key={inv.id}
-                        className="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg"
-                      >
-                        <div>
-                          <div className="text-sm text-slate-200">{inv.email}</div>
-                          <div className="text-xs text-slate-500">
-                            Отправлено: {new Date(inv.createdAt).toLocaleDateString()}
+            <div className="space-y-4">
+              {organizations?.map((org) => {
+                const orgDetails = orgDetailsMap[org.organizationId];
+                const isActive = org.organizationId === user?.currentOrganizationId;
+                const isExpanded = selectedOrgId === org.organizationId;
+                
+                return (
+                  <div
+                    key={org.organizationId}
+                    className={`rounded-lg border transition-colors ${
+                      isActive
+                        ? 'bg-primary-600/20 border-primary-500/50'
+                        : 'bg-slate-800/50 border-slate-700'
+                    }`}
+                  >
+                    {/* Organization Header */}
+                    <div className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          <Building2 size={20} className={isActive ? 'text-primary-400' : 'text-slate-400'} />
+                          <div className="flex-1">
+                            <div className="font-medium text-slate-100 flex items-center gap-2 flex-wrap">
+                              {org.organizationName}
+                              {org.isPersonal && (
+                                <span className="text-xs bg-slate-700 text-slate-400 px-2 py-0.5 rounded">
+                                  Личное
+                                </span>
+                              )}
+                              {isActive && (
+                                <span className="text-xs bg-primary-600 text-white px-2 py-0.5 rounded">
+                                  Активная
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm text-slate-400 flex items-center gap-2 mt-1">
+                              {org.role === 'Owner' ? (
+                                <><Crown size={12} className="text-yellow-500" /> Владелец</>
+                              ) : (
+                                <><User size={12} /> Участник</>
+                              )}
+                            </div>
                           </div>
                         </div>
+                        
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            inv.status === 'Pending' 
-                              ? 'bg-yellow-500/20 text-yellow-400'
-                              : inv.status === 'Accepted'
-                              ? 'bg-green-500/20 text-green-400'
-                              : 'bg-red-500/20 text-red-400'
-                          }`}>
-                            {inv.status === 'Pending' ? 'Ожидает' : 
-                             inv.status === 'Accepted' ? 'Принято' : 'Отклонено'}
-                          </span>
-                          {inv.status === 'Pending' && (
+                          {/* Switch button */}
+                          {!isActive && (
                             <button
-                              onClick={() => handleCancelInvitation(inv.id)}
-                              className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
-                              title="Отменить приглашение"
+                              onClick={() => handleSwitchOrganization(org.organizationId)}
+                              disabled={loading}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-primary-600 hover:bg-primary-500 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                              title="Переключиться на эту организацию"
                             >
-                              <X size={14} />
+                              <ArrowRight size={14} />
+                              Перейти
+                            </button>
+                          )}
+                          
+                          {/* Manage button */}
+                          {!org.isPersonal && (
+                            <button
+                              onClick={() => isExpanded ? setSelectedOrgId(null) : loadOrganizationMembers(org.organizationId)}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm rounded-lg transition-colors"
+                            >
+                              <Users size={14} />
+                              {isExpanded ? 'Скрыть' : 'Управление'}
+                            </button>
+                          )}
+                          
+                          {/* Leave button */}
+                          {!org.isPersonal && org.role !== 'Owner' && (
+                            <button
+                              onClick={() => handleLeaveOrganization(org.organizationId)}
+                              className="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition-colors"
+                              title="Покинуть организацию"
+                            >
+                              <LogOut size={18} />
                             </button>
                           )}
                         </div>
                       </div>
-                    ))}
+                      
+                      {/* Join Code (for owners) */}
+                      {org.role === 'Owner' && !org.isPersonal && orgDetails?.joinCode && (
+                        <div className="mt-3 p-3 bg-slate-900/50 rounded-lg">
+                          <div className="flex items-center gap-2 text-sm text-slate-400 mb-2">
+                            <Key size={14} />
+                            Код для регистрации:
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <code className="text-lg font-mono text-primary-400 bg-slate-800 px-3 py-1 rounded">
+                              {orgDetails.joinCode}
+                            </code>
+                            <button
+                              onClick={() => copyToClipboard(orgDetails.joinCode)}
+                              className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded transition-colors"
+                              title="Копировать"
+                            >
+                              <Copy size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleRegenerateCode(org.organizationId)}
+                              disabled={loading}
+                              className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded transition-colors"
+                              title="Сгенерировать новый код"
+                            >
+                              <RefreshCw size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Expanded Management Section */}
+                    {isExpanded && !org.isPersonal && (
+                      <div className="border-t border-slate-700 p-4 space-y-4">
+                        {/* Invite Form */}
+                        {org.role === 'Owner' && (
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-slate-300">Пригласить по email:</span>
+                            </div>
+                            <form onSubmit={(e) => handleInvite(e, org.organizationId)} className="flex gap-2">
+                              <input
+                                type="email"
+                                value={inviteOrgId === org.organizationId ? inviteEmail : ''}
+                                onChange={(e) => {
+                                  setInviteOrgId(org.organizationId);
+                                  setInviteEmail(e.target.value);
+                                }}
+                                onFocus={() => setInviteOrgId(org.organizationId)}
+                                className="flex-1 px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:border-primary-500 text-sm"
+                                placeholder="email@example.com"
+                                required
+                              />
+                              <button
+                                type="submit"
+                                disabled={loading || inviteOrgId !== org.organizationId || !inviteEmail}
+                                className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors disabled:opacity-50 text-sm"
+                              >
+                                <UserPlus size={16} />
+                              </button>
+                            </form>
+                          </div>
+                        )}
+                        
+                        {/* Members List */}
+                        <div>
+                          <h4 className="font-medium text-slate-200 mb-2 flex items-center gap-2">
+                            <Users size={16} />
+                            Участники ({members.length})
+                          </h4>
+                          <div className="space-y-2">
+                            {members.map((member) => (
+                              <div
+                                key={member.userId}
+                                className="flex items-center justify-between p-2 bg-slate-800/30 rounded-lg"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center">
+                                    <User size={14} className="text-slate-400" />
+                                  </div>
+                                  <div>
+                                    <div className="text-sm font-medium text-slate-200">
+                                      {member.fullName || member.username}
+                                      {member.userId === user?.id && (
+                                        <span className="text-xs text-slate-500 ml-1">(вы)</span>
+                                      )}
+                                    </div>
+                                    <div className="text-xs text-slate-500">{member.email}</div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-xs px-2 py-0.5 rounded ${
+                                    member.role === 'Owner' 
+                                      ? 'bg-yellow-500/20 text-yellow-400' 
+                                      : 'bg-slate-700 text-slate-400'
+                                  }`}>
+                                    {member.role === 'Owner' ? 'Владелец' : 'Участник'}
+                                  </span>
+                                  {org.role === 'Owner' && member.role !== 'Owner' && (
+                                    <button
+                                      onClick={() => handleRemoveMember(member.userId, member.fullName || member.username)}
+                                      className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                                      title="Удалить из организации"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Sent Invitations */}
+                        {org.role === 'Owner' && sentInvitations.length > 0 && (
+                          <div>
+                            <h4 className="font-medium text-slate-200 mb-2 flex items-center gap-2">
+                              <Mail size={16} />
+                              Отправленные приглашения
+                            </h4>
+                            <div className="space-y-2">
+                              {sentInvitations.map((inv) => (
+                                <div
+                                  key={inv.id}
+                                  className="flex items-center justify-between p-2 bg-slate-800/30 rounded-lg"
+                                >
+                                  <div>
+                                    <div className="text-sm text-slate-200">{inv.email}</div>
+                                    <div className="text-xs text-slate-500">
+                                      {new Date(inv.createdAt).toLocaleDateString()}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-xs px-2 py-0.5 rounded ${
+                                      inv.status === 'Pending' 
+                                        ? 'bg-yellow-500/20 text-yellow-400'
+                                        : inv.status === 'Accepted'
+                                        ? 'bg-green-500/20 text-green-400'
+                                        : 'bg-red-500/20 text-red-400'
+                                    }`}>
+                                      {inv.status === 'Pending' ? 'Ожидает' : 
+                                       inv.status === 'Accepted' ? 'Принято' : 'Отклонено'}
+                                    </span>
+                                    {inv.status === 'Pending' && (
+                                      <button
+                                        onClick={() => handleCancelInvitation(inv.id)}
+                                        className="p-1 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                                        title="Отменить приглашение"
+                                      >
+                                        <X size={14} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })}
             </div>
-          )}
+          </div>
         </div>
       )}
 
       {/* Invitations Tab */}
       {activeTab === 'invitations' && (
-        <div className="glass p-6 rounded-xl">
-          <h3 className="text-lg font-semibold text-slate-100 mb-4">Входящие приглашения</h3>
-          
-          {myInvitations.length === 0 ? (
-            <div className="text-center py-8 text-slate-400">
-              <Mail size={48} className="mx-auto mb-3 opacity-50" />
-              <p>У вас нет новых приглашений</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {myInvitations.map((inv) => (
-                <div
-                  key={inv.id}
-                  className="p-4 bg-slate-800/50 rounded-lg border border-slate-700"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="font-medium text-slate-100 flex items-center gap-2">
-                        <Building2 size={18} className="text-primary-400" />
-                        {inv.organizationName}
-                      </div>
-                      <div className="text-sm text-slate-400 mt-1">
-                        Приглашение от: {inv.invitedByName || inv.invitedByEmail}
-                      </div>
-                      <div className="text-xs text-slate-500 mt-1">
-                        {new Date(inv.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleAcceptInvitation(inv.token)}
-                        disabled={loading}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        <Check size={14} />
-                        Принять
-                      </button>
-                      <button
-                        onClick={() => handleRejectInvitation(inv.token)}
-                        disabled={loading}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        <X size={14} />
-                        Отклонить
-                      </button>
-                    </div>
-                  </div>
+        <div className="space-y-6">
+          {/* Send Invitation Section */}
+          {ownedOrganizations.length > 0 && (
+            <div className="glass p-6 rounded-xl">
+              <h3 className="text-lg font-semibold text-slate-100 mb-4">
+                <UserPlus size={20} className="inline mr-2" />
+                Пригласить в организацию
+              </h3>
+              <form onSubmit={(e) => handleInvite(e)} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                    Выберите организацию
+                  </label>
+                  <select
+                    value={inviteOrgId || ''}
+                    onChange={(e) => setInviteOrgId(parseInt(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:border-primary-500"
+                    required
+                  >
+                    <option value="">-- Выберите организацию --</option>
+                    {ownedOrganizations.map(org => (
+                      <option key={org.organizationId} value={org.organizationId}>
+                        {org.organizationName}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              ))}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                    Email приглашаемого
+                  </label>
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:border-primary-500"
+                    placeholder="email@example.com"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading || !inviteOrgId || !inviteEmail}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <Mail size={18} />
+                  Отправить приглашение
+                </button>
+              </form>
             </div>
           )}
+
+          {/* Incoming Invitations */}
+          <div className="glass p-6 rounded-xl">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4">Входящие приглашения</h3>
+            
+            {myInvitations.length === 0 ? (
+              <div className="text-center py-8 text-slate-400">
+                <Mail size={48} className="mx-auto mb-3 opacity-50" />
+                <p>У вас нет новых приглашений</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {myInvitations.map((inv) => (
+                  <div
+                    key={inv.id}
+                    className="p-4 bg-slate-800/50 rounded-lg border border-slate-700"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-medium text-slate-100 flex items-center gap-2">
+                          <Building2 size={18} className="text-primary-400" />
+                          {inv.organizationName}
+                        </div>
+                        <div className="text-sm text-slate-400 mt-1">
+                          Приглашение от: {inv.invitedByName || inv.invitedByEmail}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">
+                          {new Date(inv.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleAcceptInvitation(inv.token)}
+                          disabled={loading}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <Check size={14} />
+                          Принять
+                        </button>
+                        <button
+                          onClick={() => handleRejectInvitation(inv.token)}
+                          disabled={loading}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <X size={14} />
+                          Отклонить
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
