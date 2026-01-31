@@ -293,6 +293,39 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
     }
   };
 
+  const handleDeleteOrganization = async (orgId) => {
+    const org = organizations.find(o => o.organizationId === orgId);
+    if (!org || org.isPersonal) return;
+    
+    const confirmText = `Вы уверены, что хотите УДАЛИТЬ организацию "${org.organizationName}"?\n\nВсе данные организации (материалы, изделия, производство) будут удалены безвозвратно!\n\nВведите название организации для подтверждения:`;
+    const userInput = prompt(confirmText);
+    
+    if (userInput !== org.organizationName) {
+      if (userInput !== null) {
+        setError('Название организации введено неверно. Удаление отменено.');
+      }
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      await organizationsApi.delete(orgId);
+      
+      setSuccess('Организация удалена');
+      setSelectedOrgId(null);
+      
+      // Refresh organizations list
+      if (onOrganizationsUpdate) {
+        const response = await authApi.getOrganizations();
+        onOrganizationsUpdate(response.data);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Ошибка при удалении организации');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleRegenerateCode = async (orgId) => {
     if (!confirm('Сгенерировать новый код приглашения? Старый код перестанет работать.')) return;
     
@@ -655,6 +688,17 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                               title="Покинуть организацию"
                             >
                               <LogOut size={18} />
+                            </button>
+                          )}
+                          
+                          {/* Delete button (for owners of non-personal orgs) */}
+                          {!org.isPersonal && org.role === 'Owner' && (
+                            <button
+                              onClick={() => handleDeleteOrganization(org.organizationId)}
+                              className="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition-colors"
+                              title="Удалить организацию"
+                            >
+                              <Trash2 size={18} />
                             </button>
                           )}
                         </div>
