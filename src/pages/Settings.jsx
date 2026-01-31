@@ -689,14 +689,15 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                             {isExpanded ? 'Скрыть' : 'Управление'}
                           </button>
                           
-                          {/* Leave button */}
+                          {/* Leave button - for non-owners of non-personal orgs */}
                           {!org.isPersonal && org.role !== 'Owner' && (
                             <button
                               onClick={() => handleLeaveOrganization(org.organizationId)}
-                              className="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition-colors"
+                              className="flex items-center gap-1 px-3 py-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 text-sm rounded-lg transition-colors"
                               title="Покинуть организацию"
                             >
-                              <LogOut size={18} />
+                              <LogOut size={14} />
+                              Покинуть
                             </button>
                           )}
                           

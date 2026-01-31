@@ -64,6 +64,17 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
     
+    // Handle 403 MEMBERSHIP_REVOKED - user was removed from organization
+    if (error.response.status === 403 && error.response.data?.code === 'MEMBERSHIP_REVOKED') {
+      console.warn('Membership revoked, forcing re-login to get updated organizations');
+      
+      // Clear tokens and redirect to login
+      clearTokens();
+      alert('Вы были удалены из организации. Пожалуйста, войдите заново.');
+      window.location.href = '/login';
+      return Promise.reject(error);
+    }
+    
     // Handle 401 - try to refresh token
     if (error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
