@@ -692,26 +692,18 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                             {isExpanded ? 'Скрыть' : 'Управление'}
                           </button>
                           
-                          {/* Leave button - for non-owners of non-personal orgs */}
-                          {!org.isPersonal && org.role !== 'Owner' && (
+                          {/* Leave/Exit button - for all non-personal orgs */}
+                          {!org.isPersonal && (
                             <button
-                              onClick={() => handleLeaveOrganization(org.organizationId)}
+                              onClick={() => org.role === 'Owner' 
+                                ? handleDeleteOrganization(org.organizationId)
+                                : handleLeaveOrganization(org.organizationId)
+                              }
                               className="flex items-center gap-1 px-3 py-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 text-sm rounded-lg transition-colors"
-                              title="Покинуть организацию"
+                              title={org.role === 'Owner' ? 'Удалить организацию' : 'Покинуть организацию'}
                             >
-                              <LogOut size={14} />
-                              Покинуть
-                            </button>
-                          )}
-                          
-                          {/* Delete button (for owners of non-personal orgs) */}
-                          {!org.isPersonal && org.role === 'Owner' && (
-                            <button
-                              onClick={() => handleDeleteOrganization(org.organizationId)}
-                              className="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition-colors"
-                              title="Удалить организацию"
-                            >
-                              <Trash2 size={18} />
+                              {org.role === 'Owner' ? <Trash2 size={14} /> : <LogOut size={14} />}
+                              {org.role === 'Owner' ? 'Удалить' : 'Покинуть'}
                             </button>
                           )}
                         </div>
