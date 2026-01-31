@@ -261,7 +261,16 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
       setLoading(true);
       await organizationsApi.removeMember(selectedOrgId, memberId);
       setSuccess(`${memberName} удалён из организации`);
+      
+      // Reload members
       loadOrganizationMembers(selectedOrgId);
+      
+      // Reload organization details to get new joinCode
+      const orgDetailsRes = await organizationsApi.getById(selectedOrgId);
+      setOrgDetailsMap(prev => ({
+        ...prev,
+        [selectedOrgId]: orgDetailsRes.data
+      }));
     } catch (err) {
       setError(err.response?.data?.message || 'Ошибка при удалении участника');
     } finally {
