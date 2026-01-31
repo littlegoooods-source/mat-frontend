@@ -281,23 +281,26 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
   const handleLeaveOrganization = async (orgId) => {
     const org = organizations.find(o => o.organizationId === orgId);
     if (!org || org.isPersonal) return;
-    if (!confirm(`Вы уверены, что хотите покинуть организацию "${org.organizationName}"?`)) return;
+    if (!confirm(`Вы уверены, что хотите покинуть организацию "${org.organizationName}"?\n\nЕсли это ваша единственная организация, будет создано личное пространство.`)) return;
     
     try {
       setLoading(true);
       await organizationsApi.leave(orgId);
       
-      setSuccess('Вы покинули организацию');
+      setSuccess('Вы покинули организацию. Пожалуйста, войдите заново для обновления данных.');
       setSelectedOrgId(null);
       
-      // Refresh organizations list
-      if (onOrganizationsUpdate) {
-        const response = await authApi.getOrganizations();
-        onOrganizationsUpdate(response.data);
-      }
+      // Force re-login to get updated token with new organization
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('organizations');
+      
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1500);
     } catch (err) {
       setError(err.response?.data?.message || 'Ошибка при выходе из организации');
-    } finally {
       setLoading(false);
     }
   };

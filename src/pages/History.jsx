@@ -76,6 +76,9 @@ function History() {
     { key: 'createdAt', title: 'Дата и время', width: '150px', render: (val) => (
       <span className="text-sm">{format(new Date(val), 'dd.MM.yyyy HH:mm')}</span>
     )},
+    { key: 'userName', title: 'Пользователь', render: (val) => (
+      <span className="text-slate-300">{val || 'Система'}</span>
+    )},
     { key: 'operationTypeDisplay', title: 'Операция', render: (val, row) => (
       <div className="flex items-center gap-2">
         <span className="font-medium text-white">{val}</span>
