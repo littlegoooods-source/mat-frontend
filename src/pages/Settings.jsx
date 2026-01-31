@@ -506,7 +506,7 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                     onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:border-primary-500 font-mono text-lg tracking-wider"
                     placeholder="XXXXXXXX"
-                    maxLength={20}
+                    maxLength={40}
                     required
                   />
                   <p className="text-xs text-slate-500 mt-1">
