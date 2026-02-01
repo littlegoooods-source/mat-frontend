@@ -280,27 +280,38 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
 
   const handleLeaveOrganization = async (orgId) => {
     const org = organizations.find(o => o.organizationId === orgId);
-    if (!org || org.isPersonal) return;
-    if (!confirm(`Вы уверены, что хотите покинуть организацию "${org.organizationName}"?\n\nЕсли это ваша единственная организация, будет создано личное пространство.`)) return;
+    if (!org) return;
+    // Нельзя покинуть свою личную организацию (только чужую)
+    if (org.isPersonal && org.role === 'Owner') return;
+    
+    if (!confirm(`Вы уверены, что хотите покинуть организацию "${org.organizationName}"?`)) return;
     
     try {
       setLoading(true);
+      setError('');
       await organizationsApi.leave(orgId);
       
-      setSuccess('Вы покинули организацию. Пожалуйста, войдите заново для обновления данных.');
+      // Обновляем список организаций
+      const orgsResponse = await authApi.getOrganizations();
+      const newOrganizations = orgsResponse.data;
+      
+      if (onOrganizationsUpdate) {
+        onOrganizationsUpdate(newOrganizations);
+      }
+      
+      // Находим личную организацию или первую доступную
+      const personalOrg = newOrganizations.find(o => o.isPersonal);
+      const targetOrg = personalOrg || newOrganizations[0];
+      
+      if (targetOrg && onSwitchOrganization) {
+        await onSwitchOrganization(targetOrg.organizationId);
+      }
+      
+      setSuccess('Вы покинули организацию');
       setSelectedOrgId(null);
-      
-      // Force re-login to get updated token with new organization
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
-      localStorage.removeItem('organizations');
-      
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 1500);
     } catch (err) {
       setError(err.response?.data?.message || 'Ошибка при выходе из организации');
+    } finally {
       setLoading(false);
     }
   };
@@ -692,18 +703,19 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                             {isExpanded ? 'Скрыть' : 'Управление'}
                           </button>
                           
-                          {/* Leave/Exit button - for all non-personal orgs */}
-                          {!org.isPersonal && (
+                          {/* Leave/Exit button */}
+                          {/* Показываем для: не-личных (владельцам - удалить, участникам - покинуть) и личных чужих (покинуть) */}
+                          {((!org.isPersonal) || (org.isPersonal && org.role !== 'Owner')) && (
                             <button
-                              onClick={() => org.role === 'Owner' 
+                              onClick={() => (!org.isPersonal && org.role === 'Owner')
                                 ? handleDeleteOrganization(org.organizationId)
                                 : handleLeaveOrganization(org.organizationId)
                               }
                               className="flex items-center gap-1 px-3 py-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 text-sm rounded-lg transition-colors"
-                              title={org.role === 'Owner' ? 'Удалить организацию' : 'Покинуть организацию'}
+                              title={(!org.isPersonal && org.role === 'Owner') ? 'Удалить организацию' : 'Покинуть организацию'}
                             >
-                              {org.role === 'Owner' ? <Trash2 size={14} /> : <LogOut size={14} />}
-                              {org.role === 'Owner' ? 'Удалить' : 'Покинуть'}
+                              {(!org.isPersonal && org.role === 'Owner') ? <Trash2 size={14} /> : <LogOut size={14} />}
+                              {(!org.isPersonal && org.role === 'Owner') ? 'Удалить' : 'Покинуть'}
                             </button>
                           )}
                         </div>
