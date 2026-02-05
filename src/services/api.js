@@ -19,6 +19,12 @@ const api = axios.create({
 
 // ==================== AUTH TOKEN MANAGEMENT ====================
 
+// Flag to suppress MEMBERSHIP_REVOKED handling during intentional leave/delete
+let suppressMembershipRevoked = false;
+export const setSuppressMembershipRevoked = (value) => {
+  suppressMembershipRevoked = value;
+};
+
 // Get token from localStorage
 const getToken = () => localStorage.getItem('accessToken');
 const getRefreshToken = () => localStorage.getItem('refreshToken');
@@ -66,16 +72,15 @@ api.interceptors.response.use(
     
     // Handle 403 MEMBERSHIP_REVOKED - user was removed from organization
     if (error.response.status === 403 && error.response.data?.code === 'MEMBERSHIP_REVOKED') {
-      console.warn('Membership revoked, refreshing page to update organizations');
+      // If user intentionally left/deleted org, skip alert and redirect
+      if (suppressMembershipRevoked) {
+        return Promise.reject(error);
+      }
       
-      // Show message and reload page to refresh organizations
-      alert('Вы были удалены из организации. Страница будет обновлена.');
+      console.warn('Membership revoked, dispatching event for silent refresh');
       
-      // Dispatch custom event for App to handle
+      // Dispatch custom event for App to handle (silent update without page reload)
       window.dispatchEvent(new CustomEvent('membership-revoked'));
-      
-      // Reload the page to get fresh data
-      window.location.href = '/settings';
       return Promise.reject(error);
     }
     

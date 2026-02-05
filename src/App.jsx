@@ -69,6 +69,28 @@ function App() {
     setLoading(false);
   }, []);
 
+  // Handle membership-revoked event (user was removed by admin)
+  useEffect(() => {
+    const handleMembershipRevoked = async () => {
+      try {
+        // Refresh orgs and silently switch to personal org
+        const orgsResponse = await authApi.getOrganizations();
+        const newOrgs = orgsResponse.data;
+        const personalOrg = newOrgs.find(o => o.isPersonal);
+        const targetOrg = personalOrg || newOrgs[0];
+        if (targetOrg) {
+          await handleSwitchOrganizationSilent(targetOrg.organizationId);
+        }
+      } catch {
+        // If all fails, reload as last resort
+        window.location.reload();
+      }
+    };
+
+    window.addEventListener('membership-revoked', handleMembershipRevoked);
+    return () => window.removeEventListener('membership-revoked', handleMembershipRevoked);
+  }, []);
+
   const handleLogin = (userData, orgsData) => {
     setUser(userData);
     setOrganizations(orgsData || []);

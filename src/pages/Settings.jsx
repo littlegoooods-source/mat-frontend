@@ -19,7 +19,7 @@ import {
   Key,
   Pencil
 } from 'lucide-react';
-import { organizationsApi, invitationsApi, authApi } from '../services/api';
+import { organizationsApi, invitationsApi, authApi, setSuppressMembershipRevoked } from '../services/api';
 
 export default function Settings({ user, organizations, onOrganizationsUpdate, onSwitchOrganization, onSwitchOrganizationSilent }) {
   const [activeTab, setActiveTab] = useState('organizations');
@@ -289,22 +289,21 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
     try {
       setLoading(true);
       setError('');
+      
+      // Подавляем перехватчик MEMBERSHIP_REVOKED — выход добровольный
+      setSuppressMembershipRevoked(true);
       await organizationsApi.leave(orgId);
       
-      // Обновляем список организаций
-      const orgsResponse = await authApi.getOrganizations();
-      const newOrganizations = orgsResponse.data;
-      
-      if (onOrganizationsUpdate) {
-        onOrganizationsUpdate(newOrganizations);
-      }
-      
-      // Находим личную организацию или первую доступную и переключаемся без перезагрузки
-      const personalOrg = newOrganizations.find(o => o.isPersonal);
-      const targetOrg = personalOrg || newOrganizations[0];
-      
-      if (targetOrg && onSwitchOrganizationSilent) {
-        await onSwitchOrganizationSilent(targetOrg.organizationId);
+      // Находим личную организацию и переключаемся без перезагрузки
+      if (onSwitchOrganizationSilent) {
+        const orgsResponse = await authApi.getOrganizations();
+        const newOrganizations = orgsResponse.data;
+        const personalOrg = newOrganizations.find(o => o.isPersonal);
+        const targetOrg = personalOrg || newOrganizations[0];
+        
+        if (targetOrg) {
+          await onSwitchOrganizationSilent(targetOrg.organizationId);
+        }
       }
       
       setSuccess('Вы покинули организацию');
@@ -312,6 +311,7 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
     } catch (err) {
       setError(err.response?.data?.message || 'Ошибка при выходе из организации');
     } finally {
+      setSuppressMembershipRevoked(false);
       setLoading(false);
     }
   };
@@ -333,6 +333,9 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
     try {
       setLoading(true);
       const wasCurrentOrg = orgId === user?.currentOrganizationId;
+      
+      // Подавляем перехватчик MEMBERSHIP_REVOKED — удаление добровольное
+      setSuppressMembershipRevoked(true);
       await organizationsApi.delete(orgId);
       
       setSelectedOrgId(null);
@@ -357,6 +360,7 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
     } catch (err) {
       setError(err.response?.data?.message || 'Ошибка при удалении организации');
     } finally {
+      setSuppressMembershipRevoked(false);
       setLoading(false);
     }
   };
