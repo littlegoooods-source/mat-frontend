@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { organizationsApi, invitationsApi, authApi } from '../services/api';
 
-export default function Settings({ user, organizations, onOrganizationsUpdate, onSwitchOrganization }) {
+export default function Settings({ user, organizations, onOrganizationsUpdate, onSwitchOrganization, onSwitchOrganizationSilent }) {
   const [activeTab, setActiveTab] = useState('organizations');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -299,12 +299,12 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
         onOrganizationsUpdate(newOrganizations);
       }
       
-      // Находим личную организацию или первую доступную
+      // Находим личную организацию или первую доступную и переключаемся без перезагрузки
       const personalOrg = newOrganizations.find(o => o.isPersonal);
       const targetOrg = personalOrg || newOrganizations[0];
       
-      if (targetOrg && onSwitchOrganization) {
-        await onSwitchOrganization(targetOrg.organizationId);
+      if (targetOrg && onSwitchOrganizationSilent) {
+        await onSwitchOrganizationSilent(targetOrg.organizationId);
       }
       
       setSuccess('Вы покинули организацию');
@@ -332,16 +332,28 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
     
     try {
       setLoading(true);
+      const wasCurrentOrg = orgId === user?.currentOrganizationId;
       await organizationsApi.delete(orgId);
       
-      setSuccess('Организация удалена');
       setSelectedOrgId(null);
       
-      // Refresh organizations list
-      if (onOrganizationsUpdate) {
+      // Если удалённая организация была текущей — переключаемся на личную без перезагрузки
+      if (wasCurrentOrg && onSwitchOrganizationSilent) {
+        const orgsResponse = await authApi.getOrganizations();
+        const newOrganizations = orgsResponse.data;
+        const personalOrg = newOrganizations.find(o => o.isPersonal);
+        const targetOrg = personalOrg || newOrganizations[0];
+        
+        if (targetOrg) {
+          await onSwitchOrganizationSilent(targetOrg.organizationId);
+        }
+      } else if (onOrganizationsUpdate) {
+        // Просто обновляем список организаций
         const response = await authApi.getOrganizations();
         onOrganizationsUpdate(response.data);
       }
+      
+      setSuccess('Организация удалена');
     } catch (err) {
       setError(err.response?.data?.message || 'Ошибка при удалении организации');
     } finally {

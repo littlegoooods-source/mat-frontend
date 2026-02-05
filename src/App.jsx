@@ -100,6 +100,24 @@ function App() {
     }
   };
 
+  // Silent switch — updates state and tokens without page reload
+  const handleSwitchOrganizationSilent = async (organizationId) => {
+    try {
+      const response = await authApi.switchOrganization(organizationId);
+      const { accessToken, refreshToken, user: userData, organizations: orgsData } = response.data;
+      
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('organizations', JSON.stringify(orgsData));
+      
+      setUser(userData);
+      setOrganizations(orgsData);
+    } catch (error) {
+      console.error('Failed to switch organization:', error);
+    }
+  };
+
   const handleOrganizationsUpdate = (orgsData) => {
     setOrganizations(orgsData);
     localStorage.setItem('organizations', JSON.stringify(orgsData));
@@ -158,6 +176,7 @@ function App() {
               organizations={organizations}
               onOrganizationsUpdate={handleOrganizationsUpdate}
               onSwitchOrganization={handleSwitchOrganization}
+              onSwitchOrganizationSilent={handleSwitchOrganizationSilent}
             />
           } />
           <Route path="*" element={<NotFound />} />
