@@ -38,7 +38,7 @@ export function StatCard({ title, value, subtitle, icon: Icon, trend, color = 'p
           )}
         </div>
         
-        <div className="text-3xl font-display font-bold text-white mb-1">
+        <div className="text-2xl sm:text-3xl font-display font-bold text-white mb-1 break-words">
           {value}
         </div>
         

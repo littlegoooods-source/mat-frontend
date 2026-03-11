@@ -459,7 +459,7 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-700">
+      <div className="flex gap-2 border-b border-slate-700 overflow-x-auto scrollbar-hide">
         <button
           onClick={() => setActiveTab('organizations')}
           className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
@@ -504,17 +504,17 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
       {activeTab === 'organizations' && (
         <div className="space-y-6">
           {/* Action Buttons */}
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-col sm:flex-row justify-end gap-3">
             <button
               onClick={() => setShowJoinForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm"
             >
               <Key size={18} />
               Присоединиться по коду
             </button>
             <button
               onClick={() => setShowCreateOrg(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors text-sm"
             >
               <Plus size={18} />
               Создать организацию
@@ -633,8 +633,8 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                   >
                     {/* Organization Header */}
                     <div className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
                           <Building2 size={20} className={isActive ? 'text-primary-400' : 'text-slate-400'} />
                           <div className="flex-1">
                             {/* Name with rename functionality */}
@@ -696,7 +696,7 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {/* Switch button */}
                           {!isActive && (
                             <button
@@ -710,7 +710,6 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                             </button>
                           )}
                           
-                          {/* Manage button - now available for all orgs including personal */}
                           <button
                             onClick={() => isExpanded ? setSelectedOrgId(null) : loadOrganizationMembers(org.organizationId)}
                             className="flex items-center gap-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm rounded-lg transition-colors"
@@ -719,8 +718,6 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                             {isExpanded ? 'Скрыть' : 'Управление'}
                           </button>
                           
-                          {/* Leave/Exit button */}
-                          {/* Показываем для: не-личных (владельцам - удалить, участникам - покинуть) и личных чужих (покинуть) */}
                           {((!org.isPersonal) || (org.isPersonal && org.role !== 'Owner')) && (
                             <button
                               onClick={() => (!org.isPersonal && org.role === 'Owner')
@@ -739,18 +736,18 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                       
                       {/* Join Code (for owners) - now also for personal orgs */}
                       {org.role === 'Owner' && orgDetails?.joinCode && (
-                        <div className="mt-3 p-3 bg-slate-900/50 rounded-lg">
+                        <div className="mt-3 p-3 bg-slate-900/50 rounded-lg overflow-hidden">
                           <div className="flex items-center gap-2 text-sm text-slate-400 mb-2">
-                            <Key size={14} />
+                            <Key size={14} className="shrink-0" />
                             Код для регистрации:
                           </div>
-                          <div className="flex items-center gap-2">
-                            <code className="text-lg font-mono text-primary-400 bg-slate-800 px-3 py-1 rounded">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <code className="text-sm sm:text-lg font-mono text-primary-400 bg-slate-800 px-2 sm:px-3 py-1 rounded truncate min-w-0">
                               {orgDetails.joinCode}
                             </code>
                             <button
                               onClick={() => copyToClipboard(orgDetails.joinCode)}
-                              className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded transition-colors"
+                              className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded transition-colors shrink-0"
                               title="Копировать"
                             >
                               <Copy size={16} />
@@ -758,7 +755,7 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                             <button
                               onClick={() => handleRegenerateCode(org.organizationId)}
                               disabled={loading}
-                              className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded transition-colors"
+                              className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded transition-colors shrink-0"
                               title="Сгенерировать новый код"
                             >
                               <RefreshCw size={16} />
@@ -975,10 +972,10 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
                     key={inv.id}
                     className="p-4 bg-slate-800/50 rounded-lg border border-slate-700"
                   >
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                       <div>
                         <div className="font-medium text-slate-100 flex items-center gap-2">
-                          <Building2 size={18} className="text-primary-400" />
+                          <Building2 size={18} className="text-primary-400 shrink-0" />
                           {inv.organizationName}
                         </div>
                         <div className="text-sm text-slate-400 mt-1">

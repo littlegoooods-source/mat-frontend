@@ -74,6 +74,22 @@ input, select, textarea {
   padding: 0.75rem 1rem;
   color: #e2e8f0;
   transition: all 0.2s;
+  font-size: 16px;
+}
+
+select {
+  padding-right: 2.5rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+}
+
+@media (min-width: 640px) {
+  input, select, textarea {
+    font-size: inherit;
+  }
 }
 
 input:focus, select:focus, textarea:focus {
@@ -121,6 +137,7 @@ input::placeholder, textarea::placeholder {
 /* Table styles */
 .table-container {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
@@ -130,7 +147,7 @@ table {
 
 th {
   text-align: left;
-  padding: 1rem;
+  padding: 0.75rem;
   font-weight: 600;
   color: #94a3b8;
   border-bottom: 1px solid rgba(71, 85, 105, 0.4);
@@ -140,12 +157,27 @@ th {
 }
 
 td {
-  padding: 1rem;
+  padding: 0.75rem;
   border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+}
+
+@media (min-width: 768px) {
+  th, td {
+    padding: 1rem;
+  }
 }
 
 tr:hover {
   background: rgba(71, 85, 105, 0.1);
+}
+
+/* Hide scrollbar for tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 /* Badge styles */

@@ -397,7 +397,7 @@ function Products() {
         size="xl"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Название"
               required
@@ -419,7 +419,7 @@ function Products() {
             </datalist>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Себестоимость (руб.)"
               type="number"
@@ -477,7 +477,7 @@ function Products() {
             ) : (
               <div className="space-y-2">
                 {formData.recipeItems.map((item, index) => (
-                  <div key={index} className="flex gap-2 items-center p-3 bg-slate-800/50 rounded-lg">
+                  <div key={index} className="flex flex-col sm:flex-row gap-2 sm:items-center p-3 bg-slate-800/50 rounded-lg">
                     <select
                       value={item.materialId}
                       onChange={(e) => updateRecipeItem(index, 'materialId', e.target.value)}
@@ -491,23 +491,25 @@ function Products() {
                         </option>
                       ))}
                     </select>
-                    <input
-                      type="number"
-                      step="0.0001"
-                      min="0"
-                      value={item.quantity}
-                      onChange={(e) => updateRecipeItem(index, 'quantity', e.target.value)}
-                      placeholder="Кол-во"
-                      className="w-32"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeRecipeItem(index)}
-                      className="p-2 hover:bg-red-500/20 rounded-lg text-red-400"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="number"
+                        step="0.0001"
+                        min="0"
+                        value={item.quantity}
+                        onChange={(e) => updateRecipeItem(index, 'quantity', e.target.value)}
+                        placeholder="Кол-во"
+                        className="w-full sm:w-32"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeRecipeItem(index)}
+                        className="p-2 hover:bg-red-500/20 rounded-lg text-red-400 shrink-0"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

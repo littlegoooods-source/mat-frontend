@@ -194,7 +194,7 @@ function History() {
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <p className="text-sm text-slate-400">
                 Показано {history.length} из {pagination.totalCount} записей
               </p>
@@ -202,17 +202,17 @@ function History() {
                 <button
                   onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
                   disabled={pagination.page === 1}
-                  className="px-4 py-2 rounded-lg bg-slate-700/50 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700"
+                  className="px-4 py-2.5 rounded-lg bg-slate-700/50 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 min-h-[44px]"
                 >
                   Назад
                 </button>
-                <span className="px-4 py-2 text-slate-300">
+                <span className="px-4 py-2.5 text-slate-300 min-h-[44px] flex items-center">
                   {pagination.page} / {pagination.totalPages}
                 </span>
                 <button
                   onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
                   disabled={pagination.page === pagination.totalPages}
-                  className="px-4 py-2 rounded-lg bg-slate-700/50 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700"
+                  className="px-4 py-2.5 rounded-lg bg-slate-700/50 text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 min-h-[44px]"
                 >
                   Вперёд
                 </button>

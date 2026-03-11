@@ -21,15 +21,15 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }) {
   if (!isOpen) return null;
 
   const sizeClasses = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
+    sm: 'sm:max-w-md',
+    md: 'sm:max-w-lg',
+    lg: 'sm:max-w-2xl',
+    xl: 'sm:max-w-4xl',
   };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-full items-center justify-center p-4">
+      <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
         {/* Backdrop */}
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm"
@@ -40,23 +40,23 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }) {
         <div className={`
           relative w-full ${sizeClasses[size]} 
           glass rounded-2xl shadow-2xl
-          animate-fadeIn
+          animate-fadeIn max-h-[95vh] flex flex-col
         `}>
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
-            <h2 className="text-xl font-display font-semibold text-white">
+          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-700/50 shrink-0">
+            <h2 className="text-lg sm:text-xl font-display font-semibold text-white pr-2">
               {title}
             </h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-slate-700/50 transition-colors"
+              className="p-2 rounded-lg hover:bg-slate-700/50 transition-colors shrink-0"
             >
               <X size={20} />
             </button>
           </div>
           
           {/* Content */}
-          <div className="p-6">
+          <div className="p-4 sm:p-6 overflow-y-auto">
             {children}
           </div>
         </div>

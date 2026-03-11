@@ -194,7 +194,7 @@ function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="text-center">
           <p className="text-slate-400 mb-2">Всего изделий</p>
-          <p className="text-4xl font-display font-bold text-white">
+          <p className="text-3xl sm:text-4xl font-display font-bold text-white">
             {data?.productsSummary?.totalProducts || 0}
           </p>
           <p className="text-sm text-slate-500 mt-1">
@@ -203,14 +203,14 @@ function Dashboard() {
         </Card>
         <Card className="text-center">
           <p className="text-slate-400 mb-2">Произведено всего</p>
-          <p className="text-4xl font-display font-bold text-white">
+          <p className="text-3xl sm:text-4xl font-display font-bold text-white">
             {data?.productsSummary?.totalProduced || 0}
           </p>
           <p className="text-sm text-slate-500 mt-1">единиц продукции</p>
         </Card>
         <Card className="text-center">
           <p className="text-slate-400 mb-2">Стоимость склада</p>
-          <p className="text-4xl font-display font-bold text-primary-400">
+          <p className="text-3xl sm:text-4xl font-display font-bold text-primary-400 break-words">
             {formatCurrency(
               (data?.materialsSummary?.totalValue || 0) + 
               (data?.finishedProductsSummary?.totalInStockValue || 0)

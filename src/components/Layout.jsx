@@ -78,7 +78,7 @@ function Layout({ user, organizations, onLogout, onSwitchOrganization }) {
       `}>
         <div className="h-full flex flex-col">
           {/* Logo */}
-          <div className="p-6 border-b border-slate-700/50">
+          <div className="p-6 pl-14 lg:pl-6 border-b border-slate-700/50">
             <h1 className="text-2xl font-display font-bold gradient-text">
               Мастерская
             </h1>
@@ -219,7 +219,7 @@ function Layout({ user, organizations, onLogout, onSwitchOrganization }) {
       )}
 
       {/* Main content */}
-      <main className="flex-1 p-4 lg:p-8 overflow-auto">
+      <main className="flex-1 p-4 pt-16 lg:pt-8 lg:p-8 overflow-auto">
         <div className="max-w-7xl mx-auto animate-fadeIn">
           <Outlet />
         </div>
