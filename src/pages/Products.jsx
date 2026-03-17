@@ -332,7 +332,7 @@ function Products() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="pl-10 lg:pl-0">
+        <div className="pl-14 lg:pl-0">
           <h1 className="text-2xl font-display font-bold text-white">Изделия</h1>
           <p className="text-slate-400">Рецепты и карточки изделий</p>
         </div>

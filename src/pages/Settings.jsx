@@ -442,7 +442,7 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between pl-10 lg:pl-0">
+      <div className="flex items-center justify-between pl-14 lg:pl-0">
         <h1 className="text-2xl font-display font-bold text-slate-100">Настройки</h1>
       </div>
 

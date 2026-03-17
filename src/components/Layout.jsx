@@ -78,7 +78,7 @@ function Layout({ user, organizations, onLogout, onSwitchOrganization }) {
       `}>
         <div className="h-full flex flex-col">
           {/* Logo */}
-          <div className="p-6 pl-14 lg:pl-6 border-b border-slate-700/50">
+          <div className="p-6 pl-16 lg:pl-6 border-b border-slate-700/50">
             <h1 className="text-2xl font-display font-bold gradient-text">
               Мастерская
             </h1>
