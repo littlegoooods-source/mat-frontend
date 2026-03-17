@@ -8,6 +8,7 @@ function Table({ columns, data, onRowClick, emptyMessage = 'Нет данных'
   }
 
   const dataColumns = columns.filter((col) => col.title);
+  const mobileDataColumns = dataColumns.filter((col) => !col.mobileHidden);
   const actionColumn = columns.find((col) => !col.title);
 
   return (
@@ -52,7 +53,7 @@ function Table({ columns, data, onRowClick, emptyMessage = 'Нет данных'
             onClick={() => onRowClick?.(row)}
             className={`glass rounded-xl p-4 space-y-2 ${onRowClick ? 'cursor-pointer active:bg-slate-700/30' : ''}`}
           >
-            {dataColumns.map((col) => (
+            {mobileDataColumns.map((col) => (
               <div key={col.key} className="flex justify-between items-start gap-3">
                 <span className="text-xs text-slate-400 uppercase tracking-wide shrink-0 pt-0.5">
                   {col.title}

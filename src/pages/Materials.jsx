@@ -153,7 +153,7 @@ function Materials() {
       </div>
     )},
     { key: 'category', title: 'Категория', render: (val) => val || '-' },
-    { key: 'unit', title: 'Ед. изм.' },
+    { key: 'unit', title: 'Ед. изм.', mobileHidden: true },
     { key: 'currentStock', title: 'Остаток', render: (val, row) => (
       <span className={row.isBelowMinimum ? 'text-yellow-400 font-medium' : ''}>
         {val} {row.unit}
@@ -209,11 +209,11 @@ function Materials() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
+        <div className="pl-10 lg:pl-0">
           <h1 className="text-2xl font-display font-bold text-white">Материалы</h1>
           <p className="text-slate-400">Справочник материалов мастерской</p>
         </div>
-        <Button icon={Plus} onClick={() => openModal()}>
+        <Button icon={Plus} onClick={() => openModal()} className="w-full sm:w-auto">
           Добавить материал
         </Button>
       </div>

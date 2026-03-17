@@ -205,11 +205,11 @@ function Productions() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
+        <div className="pl-10 lg:pl-0">
           <h1 className="text-2xl font-display font-bold text-white">Производство</h1>
           <p className="text-slate-400">Производство изделий и списание материалов</p>
         </div>
-        <Button icon={Factory} onClick={openModal}>
+        <Button icon={Factory} onClick={openModal} className="w-full sm:w-auto">
           Новое производство
         </Button>
       </div>

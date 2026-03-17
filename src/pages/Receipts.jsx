@@ -208,11 +208,11 @@ function Receipts() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
+        <div className="pl-10 lg:pl-0">
           <h1 className="text-2xl font-display font-bold text-white">Поступления</h1>
           <p className="text-slate-400">Учет поступления материалов на склад</p>
         </div>
-        <Button icon={Plus} onClick={() => openModal()}>
+        <Button icon={Plus} onClick={() => openModal()} className="w-full sm:w-auto">
           Новое поступление
         </Button>
       </div>

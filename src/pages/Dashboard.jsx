@@ -65,7 +65,7 @@ function Dashboard() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
+      <div className="pl-10 lg:pl-0">
         <h1 className="text-3xl font-display font-bold text-white mb-2">
           Добро пожаловать!
         </h1>

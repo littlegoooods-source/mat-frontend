@@ -122,8 +122,8 @@ function History() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10">
+      <div className="flex items-center gap-3 pl-10 lg:pl-0">
+        <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 hidden lg:block">
           <Clock size={24} className="text-blue-400" />
         </div>
         <div>

@@ -257,7 +257,7 @@ function FinishedProducts() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
+      <div className="pl-10 lg:pl-0">
         <h1 className="text-2xl font-display font-bold text-white">Готовая продукция</h1>
         <p className="text-slate-400">Склад готовых изделий, продажи и списания</p>
       </div>
