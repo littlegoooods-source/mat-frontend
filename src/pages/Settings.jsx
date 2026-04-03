@@ -421,8 +421,34 @@ export default function Settings({ user, organizations, onOrganizationsUpdate, o
   };
 
   const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    setSuccess('Скопировано в буфер обмена');
+    if (!text) return;
+
+    const fallbackCopy = () => {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        const ok = document.execCommand('copy');
+        if (!ok) throw new Error('execCommand failed');
+        setSuccess('Скопировано в буфер обмена');
+      } catch (e) {
+        window.prompt('Скопируйте код вручную:', text);
+      }
+      document.body.removeChild(textarea);
+    };
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(
+        () => setSuccess('Скопировано в буфер обмена'),
+        () => fallbackCopy()
+      );
+    } else {
+      fallbackCopy();
+    }
   };
 
   const clearMessages = () => {

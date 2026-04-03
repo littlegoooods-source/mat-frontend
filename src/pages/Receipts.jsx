@@ -230,19 +230,23 @@ function Receipts() {
               <option key={m.id} value={m.id}>{m.name}</option>
             ))}
           </select>
-          <Input
-            type="date"
+          <input
+            type={dateFrom ? 'date' : 'text'}
+            placeholder="дата от"
             value={dateFrom}
+            onFocus={(e) => { e.target.type = 'date'; }}
+            onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
             onChange={(e) => setDateFrom(e.target.value)}
-            placeholder="С даты"
-            className="sm:w-40"
+            className="sm:w-48"
           />
-          <Input
-            type="date"
+          <input
+            type={dateTo ? 'date' : 'text'}
+            placeholder="дата до"
             value={dateTo}
+            onFocus={(e) => { e.target.type = 'date'; }}
+            onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
             onChange={(e) => setDateTo(e.target.value)}
-            placeholder="По дату"
-            className="sm:w-40"
+            className="sm:w-48"
           />
         </div>
       </Card>

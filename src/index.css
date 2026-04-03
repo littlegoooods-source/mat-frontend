@@ -86,6 +86,15 @@ select {
   background-size: 1rem;
 }
 
+input[type="date"] {
+  padding-right: 2.5rem;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(0.6);
+}
+
 @media (min-width: 640px) {
   input, select, textarea {
     font-size: inherit;

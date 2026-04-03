@@ -227,17 +227,23 @@ function Productions() {
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
-          <Input
-            type="date"
+          <input
+            type={dateFrom ? 'date' : 'text'}
+            placeholder="дата от"
             value={dateFrom}
+            onFocus={(e) => { e.target.type = 'date'; }}
+            onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="sm:w-40"
+            className="sm:w-48"
           />
-          <Input
-            type="date"
+          <input
+            type={dateTo ? 'date' : 'text'}
+            placeholder="дата до"
             value={dateTo}
+            onFocus={(e) => { e.target.type = 'date'; }}
+            onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
             onChange={(e) => setDateTo(e.target.value)}
-            className="sm:w-40"
+            className="sm:w-48"
           />
           <label className="flex items-center gap-2 text-slate-300">
             <input

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Clock, Filter } from 'lucide-react';
 import Card from '../components/Card';
 import Table from '../components/Table';
-import Input from '../components/Input';
 import Badge from '../components/Badge';
 import { historyApi } from '../services/api';
 import { format } from 'date-fns';
@@ -155,17 +154,21 @@ function History() {
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
-          <Input
-            type="date"
+          <input
+            type={filters.dateFrom ? 'date' : 'text'}
+            placeholder="дата от"
             value={filters.dateFrom}
+            onFocus={(e) => { e.target.type = 'date'; }}
+            onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
             onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-            placeholder="С даты"
           />
-          <Input
-            type="date"
+          <input
+            type={filters.dateTo ? 'date' : 'text'}
+            placeholder="дата до"
             value={filters.dateTo}
+            onFocus={(e) => { e.target.type = 'date'; }}
+            onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
             onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-            placeholder="По дату"
           />
           <label className="flex items-center gap-2 text-slate-300">
             <input
