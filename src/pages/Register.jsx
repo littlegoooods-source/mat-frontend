@@ -28,13 +28,24 @@ export default function Register({ onLogin }) {
     e.preventDefault();
     setError('');
 
+    const errors = [];
+    if (!formData.email || !formData.email.trim()) {
+      errors.push('Email обязателен');
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.push('Некорректный формат email');
+    }
+    if (!formData.username || formData.username.trim().length < 3) {
+      errors.push('Имя пользователя должно быть не менее 3 символов');
+    }
+    if (!formData.password || formData.password.length < 6) {
+      errors.push('Пароль должен быть не менее 6 символов');
+    }
     if (formData.password !== formData.confirmPassword) {
-      setError('Пароли не совпадают');
-      return;
+      errors.push('Пароли не совпадают');
     }
 
-    if (formData.password.length < 6) {
-      setError('Пароль должен быть не менее 6 символов');
+    if (errors.length > 0) {
+      setError(errors.join('. '));
       return;
     }
 
@@ -55,18 +66,20 @@ export default function Register({ onLogin }) {
       
       navigate('/');
     } catch (err) {
-      const data = err.response?.data;
       let message = 'Ошибка при регистрации';
-      if (data?.message) {
-        message = data.message;
-      } else if (data?.errors) {
-        const allErrors = Object.values(data.errors).flat();
-        message = allErrors.join('. ');
-      } else if (data?.title) {
-        message = data.title;
-      } else if (!err.response) {
-        message = 'Сервер недоступен. Проверьте подключение к сети.';
-      }
+      try {
+        const data = err.response?.data;
+        if (data?.message) {
+          message = data.message;
+        } else if (data?.errors && typeof data.errors === 'object') {
+          const allErrors = Object.values(data.errors).flat();
+          if (allErrors.length > 0) message = allErrors.join('. ');
+        } else if (data?.title) {
+          message = data.title;
+        } else if (!err.response) {
+          message = 'Сервер недоступен. Проверьте подключение к сети.';
+        }
+      } catch (_) {}
       setError(message);
     } finally {
       setLoading(false);
