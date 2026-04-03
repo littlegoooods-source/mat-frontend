@@ -38,7 +38,18 @@ export default function Login({ onLogin }) {
       
       navigate('/');
     } catch (err) {
-      const message = err.response?.data?.message || 'Ошибка при входе';
+      const data = err.response?.data;
+      let message = 'Ошибка при входе';
+      if (data?.message) {
+        message = data.message;
+      } else if (data?.errors) {
+        const allErrors = Object.values(data.errors).flat();
+        message = allErrors.join('. ');
+      } else if (data?.title) {
+        message = data.title;
+      } else if (!err.response) {
+        message = 'Сервер недоступен. Проверьте подключение к сети.';
+      }
       setError(message);
     } finally {
       setLoading(false);
