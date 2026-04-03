@@ -237,7 +237,7 @@ function Receipts() {
             onFocus={(e) => { e.target.type = 'date'; }}
             onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="sm:w-48"
+            className="w-full sm:w-48"
           />
           <input
             type={dateTo ? 'date' : 'text'}
@@ -246,7 +246,7 @@ function Receipts() {
             onFocus={(e) => { e.target.type = 'date'; }}
             onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
             onChange={(e) => setDateTo(e.target.value)}
-            className="sm:w-48"
+            className="w-full sm:w-48"
           />
         </div>
       </Card>

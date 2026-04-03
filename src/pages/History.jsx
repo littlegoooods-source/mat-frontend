@@ -161,6 +161,7 @@ function History() {
             onFocus={(e) => { e.target.type = 'date'; }}
             onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
             onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+            className="w-full"
           />
           <input
             type={filters.dateTo ? 'date' : 'text'}
@@ -169,6 +170,7 @@ function History() {
             onFocus={(e) => { e.target.type = 'date'; }}
             onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
             onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+            className="w-full"
           />
           <label className="flex items-center gap-2 text-slate-300">
             <input

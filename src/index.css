@@ -86,10 +86,6 @@ select {
   background-size: 1rem;
 }
 
-input[type="date"] {
-  padding-right: 2.5rem;
-}
-
 input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   filter: invert(0.6);

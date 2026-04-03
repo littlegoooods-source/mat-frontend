@@ -234,7 +234,7 @@ function Productions() {
             onFocus={(e) => { e.target.type = 'date'; }}
             onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="sm:w-48"
+            className="w-full sm:w-48"
           />
           <input
             type={dateTo ? 'date' : 'text'}
@@ -243,7 +243,7 @@ function Productions() {
             onFocus={(e) => { e.target.type = 'date'; }}
             onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
             onChange={(e) => setDateTo(e.target.value)}
-            className="sm:w-48"
+            className="w-full sm:w-48"
           />
           <label className="flex items-center gap-2 text-slate-300">
             <input
